@@ -213,6 +213,11 @@ Without these systems, matches feel arcade. With them, Bass Ball becomes a **rep
 |------|---------|
 | [docs/STRATEGIC_GAPS.md](docs/STRATEGIC_GAPS.md) | Analysis of 5 remaining gaps: Football depth (advanced role system, possession archetypes, set piece choreography), Tactical identity (tactical stances, named philosophies like Tiki-Taka), Long-term progression (career arcs, legacy systems), Social gravity (club progression, friend cosmetics), Broadcast level presentation (dynamic cameras, tactical graphics, streamer integration). Roadmap for transforming "Web3 game that is football" → "football game that uses Web3" |
 
+**Tactics Engine Design (Core Infrastructure)**
+| File | Purpose |
+|------|---------|
+| [docs/TACTICS_ENGINE_DESIGN.md](docs/TACTICS_ENGINE_DESIGN.md) | Core deterministic, expressive, legible, server-authoritative tactics engine. Four non-negotiables: (1) **Deterministic** - Same inputs + same seed = same outcome (verifiable replay), (2) **Expressive** - Tactical choices immediately visible in match playstyle (formations, pressing, build-up), (3) **Legible** - Players understand why decisions succeed/fail (decision logs with reasoning chains), (4) **Server-authoritative** - Client only sends intent, server decides outcome (anti-cheat). Includes deterministic simulation architecture (seeding, state management), tactical decision scoring system (formula-based, not RNG), formation effectiveness matrices, parameter impact analysis, server authority implementation, replay verification, blockchain anchoring, and 16-week implementation roadmap |
+
 **Why This Matters**: Bass Ball layers **multiple engagement systems** to create a complete player ecosystem:
 
 1. **Skill-Based Progression** (Skill Mastery): 7 role-specific progressions, 10 playstyle badges, blockchain verification
