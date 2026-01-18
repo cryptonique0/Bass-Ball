@@ -14,6 +14,7 @@ export interface MatchEvent {
 
 export interface MatchStats {
   homeTeam: {
+    goals: number;
     shots: number;
     shotsOnTarget: number;
     passes: number;
@@ -21,8 +22,12 @@ export interface MatchStats {
     tackles: number;
     fouls: number;
     possession: number;
+    assists: number;
+    yellowCards: number;
+    redCards: number;
   };
   awayTeam: {
+    goals: number;
     shots: number;
     shotsOnTarget: number;
     passes: number;
@@ -30,6 +35,9 @@ export interface MatchStats {
     tackles: number;
     fouls: number;
     possession: number;
+    assists: number;
+    yellowCards: number;
+    redCards: number;
   };
   events: MatchEvent[];
 }
@@ -58,6 +66,7 @@ export class MatchEngine {
     this.gameState = gameState;
     this.matchStats = {
       homeTeam: {
+        goals: 0,
         shots: 0,
         shotsOnTarget: 0,
         passes: 0,
@@ -65,8 +74,12 @@ export class MatchEngine {
         tackles: 0,
         fouls: 0,
         possession: 0,
+        assists: 0,
+        yellowCards: 0,
+        redCards: 0,
       },
       awayTeam: {
+        goals: 0,
         shots: 0,
         shotsOnTarget: 0,
         passes: 0,
@@ -74,6 +87,9 @@ export class MatchEngine {
         tackles: 0,
         fouls: 0,
         possession: 0,
+        assists: 0,
+        yellowCards: 0,
+        redCards: 0,
       },
       events: [],
     };
@@ -290,8 +306,18 @@ export class MatchEngine {
   private scoreGoal(team: 'home' | 'away', player: Player): void {
     if (team === 'home') {
       this.gameState.homeTeam.score++;
+      this.matchStats.homeTeam.goals++;
     } else {
       this.gameState.awayTeam.score++;
+      this.matchStats.awayTeam.goals++;
+    }
+
+    // Find potential assist maker (last passer before goal)
+    const assistingPlayer = this.findLastPasser(team);
+    let assistText = '';
+    if (assistingPlayer) {
+      this.matchStats[team === 'home' ? 'homeTeam' : 'awayTeam'].assists++;
+      assistText = ` (Assist: ${assistingPlayer})`;
     }
 
     this.recordEvent({
@@ -299,8 +325,24 @@ export class MatchEngine {
       type: 'goal',
       team,
       player: player.name,
-      description: `⚽ GOAL! ${player.name} scores for ${team === 'home' ? 'HOME' : 'AWAY'}!`,
+      description: `⚽ GOAL! ${player.name} scores for ${team === 'home' ? 'HOME' : 'AWAY'}!${assistText}`,
     });
+  }
+
+  /**
+   * Find the last player who passed to current ball carrier (for assists)
+   */
+  private findLastPasser(team: 'home' | 'away'): string | null {
+    // Get last pass event for this team
+    const recentPasses = this.matchStats.events
+      .filter((e) => e.type === 'pass' && e.team === team)
+      .reverse()
+      .slice(0, 1);
+
+    if (recentPasses.length > 0) {
+      return recentPasses[0].player;
+    }
+    return null;
   }
 
   /**
@@ -400,6 +442,11 @@ export class MatchEngine {
         description: `🔴 ${player.name} is sent off!`,
       });
 
+      // Increment red card stat (or yellow if second yellow)
+      if (cardType === 'red' || yellowCount >= 1) {
+        this.matchStats[team === 'home' ? 'homeTeam' : 'awayTeam'].redCards++;
+      }
+
       // Remove player from match
       const teamPlayers = team === 'home' ? this.gameState.homeTeam.players : this.gameState.awayTeam.players;
       const idx = teamPlayers.findIndex((p) => p.id === player.id);
@@ -415,6 +462,9 @@ export class MatchEngine {
         player: player.name,
         description: `🟨 ${player.name} receives a yellow card!`,
       });
+
+      // Increment yellow card stat
+      this.matchStats[team === 'home' ? 'homeTeam' : 'awayTeam'].yellowCards++;
 
       cards.push({
         player: player.name,

@@ -5,6 +5,7 @@ import { useAIMatch, usePvPMatch } from '@/hooks/useMatchEngine';
 import { Team } from '@/lib/gameEngine';
 import { MatchStats } from '@/lib/matchEngine';
 import MatchControls from './MatchControls';
+import { MatchResults } from './MatchResults';
 
 interface LiveMatchProps {
   homeTeam: Team;
@@ -20,6 +21,23 @@ export function LiveMatch({ homeTeam, awayTeam, mode, difficulty = 'normal' }: L
   const matchHook = mode === 'ai' ? useAIMatch(homeTeam, awayTeam) : usePvPMatch(homeTeam, awayTeam);
 
   const { gameState, matchStats, isPaused, pause, resume, togglePause, selectPlayer, shoot, pass, sprint, tackle, resetMatch } = matchHook;
+
+  // Check if match is over
+  const isMatchOver = gameState.gameTime >= 90;
+
+  if (isMatchOver) {
+    return (
+      <MatchResults
+        homeTeamName={homeTeam.name}
+        awayTeamName={awayTeam.name}
+        homeScore={gameState.homeTeam.score}
+        awayScore={gameState.awayTeam.score}
+        matchStats={matchStats}
+        gameTime={gameState.gameTime}
+        onRestart={resetMatch}
+      />
+    );
+  }
 
   const handlePitchClick = (e: React.MouseEvent<SVGSVGElement>) => {
     const svg = e.currentTarget;
