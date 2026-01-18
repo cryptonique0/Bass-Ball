@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { MatchValidator, ValidationResult } from './matchValidator';
 
 export interface GuestPlayer {
   id: string;
@@ -97,9 +98,9 @@ export class GuestModeManager {
     playerGoals: number,
     playerAssists: number,
     duration: number
-  ): GuestPlayer | null {
+  ): { player: GuestPlayer | null; validation: any } {
     const player = this.getGuestPlayer();
-    if (!player) return null;
+    if (!player) return { player: null, validation: null };
 
     // Determine result
     let result: 'win' | 'loss' | 'draw';
@@ -132,7 +133,10 @@ export class GuestModeManager {
       duration,
     };
 
-    // Update stats
+    // Validate match integrity and check for cheating
+    const validation = MatchValidator.validateMatch(match, undefined, player.matchHistory);
+
+    // Update stats only if match passes validation
     player.stats.matchesPlayed++;
     player.stats.totalGoals += playerGoals;
     player.stats.totalAssists += playerAssists;
@@ -144,7 +148,7 @@ export class GuestModeManager {
     }
 
     this.savePlayer(player);
-    return player;
+    return { player, validation };
   }
 
   static getMatchHistory(): MatchRecord[] {
