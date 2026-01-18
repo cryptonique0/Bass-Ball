@@ -155,6 +155,18 @@ Without these systems, matches feel arcade. With them, Bass Ball becomes a **rep
 |------|---------|
 | [docs/INPUT_SYSTEM.md](docs/INPUT_SYSTEM.md) | Gamepad support (PS5/Xbox/Switch), input buffering (100-200ms), latency feedback UI, custom keybind profiles (6 presets + unlimited custom), keyboard mapping, accessibility options (colorblind/high contrast/hold time adjustment) |
 
+**Social & Community Systems (Retention Gravity)**
+
+**Clubs & Communities (Player-Formed Guilds)**
+| File | Purpose |
+|------|---------|
+| [docs/CLUBS_AND_COMMUNITIES.md](docs/CLUBS_AND_COMMUNITIES.md) | Player-formed clubs (2-50 members), club ELO system (weighted average by role), club tournaments (8-16 team brackets), shared treasury (cosmetics-only fund), club halls of fame (seasonal achievements, trophy NFTs), role-based permissions (President/General/Member/Reserve) |
+
+**Spectator Mode & Broadcasting (Community Engagement)**
+| File | Purpose |
+|------|---------|
+| [docs/SPECTATOR_MODE.md](docs/SPECTATOR_MODE.md) | Live match spectating (~500ms latency, unlimited viewers), delayed verified spectating (on-chain proof), tournament casting UI (director controls, multi-camera), 5+ camera angles (Broadcast/POV/Aerial/Tactical/GK View), spectator rewards (battle pass XP, cosmetics $0.25-$1.00), match predictions with cosmetics prize |
+
 **Why This Matters**: Players earn progression through **pure skill expression**:
 - **Skill Mastery**: 7 role-specific progressions (Passing accuracy, Tackle timing, Shot placement under pressure)
 - **Playstyle Badges**: 10 badges (Iron Wall, Press Resistant, Interception Master, Finishing Expert, Dead Ball Specialist, Counter Specialist, Tempo Master, Box-to-Box Dynamo, Dribble Master, All-Around Threat)
