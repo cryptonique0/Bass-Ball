@@ -167,14 +167,35 @@ Without these systems, matches feel arcade. With them, Bass Ball becomes a **rep
 |------|---------|
 | [docs/SPECTATOR_MODE.md](docs/SPECTATOR_MODE.md) | Live match spectating (~500ms latency, unlimited viewers), delayed verified spectating (on-chain proof), tournament casting UI (director controls, multi-camera), 5+ camera angles (Broadcast/POV/Aerial/Tactical/GK View), spectator rewards (battle pass XP, cosmetics $0.25-$1.00), match predictions with cosmetics prize |
 
-**Why This Matters**: Players earn progression through **pure skill expression**:
-- **Skill Mastery**: 7 role-specific progressions (Passing accuracy, Tackle timing, Shot placement under pressure)
-- **Playstyle Badges**: 10 badges (Iron Wall, Press Resistant, Interception Master, Finishing Expert, Dead Ball Specialist, Counter Specialist, Tempo Master, Box-to-Box Dynamo, Dribble Master, All-Around Threat)
-- **Blockchain Verified**: All badges prove-hashable, preventing stat padding and boosting
-- **Cosmetics-Only Monetization**: Zero stat-affecting items, revenue from cosmetics ($0.99-$24.99), battle pass ($9.99/season), NFT marketplace
-- **Ranked Integrity**: ELO-based competitive tier system with anti-smurfing, anti-reverse-boosting, demotion protection
+**Rivalries & Reputation (Emotional Layer)**
+| File | Purpose |
+|------|---------|
+| [docs/REPUTATION_SYSTEM.md](docs/REPUTATION_SYSTEM.md) | Rival tracking (3+ matches unlock rivalry status), head-to-head statistics (formation matchups, role analysis, win rate), reputation score (separate from ELO), rivalry tiers (Newcomer→Legendary→Mythical), rivalry events (revenge narratives, comebacks, nemesis slaying), cosmetics unlocked by reputation tier ($1-$50/month value), rivalry challenges with optional wagers, historic matchup NFTs |
 
-Without progression meaning, players churn. With skill-based mastery + cosmetics-only monetization, Bass Ball guarantees **fair play and sustainable engagement**.
+**Trust & Verification (Anti-Cheat & Disputes)**
+
+**Dispute Resolution & Slashing (Fair Play Enforcement)**
+| File | Purpose |
+|------|---------|
+| [docs/DISPUTE_RESOLUTION.md](docs/DISPUTE_RESOLUTION.md) | Challenge window (7-day dispute period), automatic verification (deterministic replay, input validation, hardware fingerprinting), guardian arbitration (11 guardians, 66% supermajority, community voting), tiered slashing ($10-$500 cosmetics, ELO resets, ranked restrictions 14-365 days), appeal mechanism (14-day window, fresh evidence required), forensic analysis tools (frame-by-frame scrubbing, physics analyzer, input inspector), economic incentives (bounties, guardian rewards), anti-cheat mechanisms (server-side validation, rate limiting, ML detection) |
+
+**Extensibility & Community Innovation**
+
+**Custom Match Rules & Modding (Community Creativity)**
+| File | Purpose |
+|------|---------|
+| [docs/CUSTOM_MATCH_RULES.md](docs/CUSTOM_MATCH_RULES.md) | Friendly match modifiers (physics: gravity/friction/spin, stamina, time, cards, formations, visuals), modifier stacking (1-6 modifiers, balance validation), rule set creator tools (SDK, validator, balance scoring), community tournament rule sets (publish, rate, featured), anti-cheat validation (no stat boosts, no hidden mechanics, no ELO manipulation), official rule sets (Classic, Arcade, Tactical, Speed Run, Challenge, Symmetry, Experimental), creative experimentation without breaking competitive integrity |
+
+**Why This Matters**: Bass Ball layers **multiple engagement systems** to create a complete player ecosystem:
+
+1. **Skill-Based Progression** (Skill Mastery): 7 role-specific progressions, 10 playstyle badges, blockchain verification
+2. **Emotional Bonds** (Reputation): Rival tracking, head-to-head stats, revenge narratives, legendary status
+3. **Community Structures** (Clubs & Spectating): Player-formed clubs, tournaments, shared treasury, broadcasting
+4. **Fair Play Enforcement** (Dispute Resolution): 7-day challenge window, guardian arbitration, economic slashing
+5. **Creative Experimentation** (Custom Rules): Physics modifiers, community rule sets, no stat-boosting exploits
+6. **Cosmetics-Only Monetization**: Zero stat-affecting items, $0.99-$24.99 cosmetics, $9.99/season battle pass
+
+Without these systems, players churn. With skill-based progression + emotional engagement + community structures + trustless verification + creative freedom, Bass Ball guarantees **fair play, sustainable engagement, and lasting value**.
 
 ### Layer 1: Frontend & User Experience
 | File | Purpose |
