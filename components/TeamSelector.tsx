@@ -6,6 +6,8 @@ import { FormationType, FORMATIONS, applyFormation } from '@/lib/formations';
 import { TeamCustomizationManager } from '@/lib/teamCustomization';
 import { TeamOwnershipNFTManager } from '@/lib/teamOwnershipNFT';
 import { SeasonalRankingNFTManager } from '@/lib/seasonalRankingNFT';
+import { ProgressionManager } from '@/lib/progressionSystem';
+import { LeagueManager } from '@/lib/leaguesAndDivisions';
 
 interface TeamSelectorProps {
   teams: { home: Team; away: Team };
@@ -47,6 +49,26 @@ export function TeamSelector({ teams, onSelect, onCancel }: TeamSelectorProps) {
         : undefined,
     [currentTeam.name, currentSeason, seasonalMgr]
   );
+
+  // Get team progression
+  const progMgr = ProgressionManager.getInstance();
+  const teamProgression = useMemo(
+    () => progMgr.getProgressionByEntity(currentTeam.id || ''),
+    [currentTeam.id, progMgr]
+  );
+
+  // Get team league standings
+  const leagueMgr = LeagueManager.getInstance();
+  const allLeagues = useMemo(() => leagueMgr.getAllLeagues(), [leagueMgr]);
+  const teamStanding = useMemo(() => {
+    for (const league of allLeagues) {
+      for (const division of league.divisions) {
+        const standing = leagueMgr.getTeamStanding(division.divisionId, currentTeam.id || '');
+        if (standing) return standing;
+      }
+    }
+    return undefined;
+  }, [currentTeam.id, allLeagues, leagueMgr]);
 
   const handleConfirm = () => {
     onSelect(selectedFormation, selectedTeam);
@@ -207,6 +229,60 @@ export function TeamSelector({ teams, onSelect, onCancel }: TeamSelectorProps) {
                   <div>
                     <p className="text-gray-400">Rating</p>
                     <p className="text-yellow-300 font-bold">{teamRanking.averageRating}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Team Progression */}
+            {teamProgression && (
+              <div className="mt-4 p-4 bg-purple-900 bg-opacity-30 rounded-lg border-2 border-purple-600">
+                <h4 className="font-bold text-white mb-3 flex items-center gap-2">
+                  📈 Team Progression
+                </h4>
+                <div className="grid grid-cols-4 gap-3 text-sm">
+                  <div className="bg-gray-700 rounded p-2">
+                    <p className="text-gray-400 text-xs">Level</p>
+                    <p className="text-purple-300 font-bold text-lg">{teamProgression.currentLevel}</p>
+                  </div>
+                  <div className="bg-gray-700 rounded p-2">
+                    <p className="text-gray-400 text-xs">Tier</p>
+                    <p className="text-purple-300 font-bold capitalize text-sm">{teamProgression.currentTier}</p>
+                  </div>
+                  <div className="bg-gray-700 rounded p-2">
+                    <p className="text-gray-400 text-xs">Win Rate</p>
+                    <p className="text-purple-300 font-bold">{Math.round(teamProgression.winRate)}%</p>
+                  </div>
+                  <div className="bg-gray-700 rounded p-2">
+                    <p className="text-gray-400 text-xs">Streak</p>
+                    <p className="text-purple-300 font-bold">{teamProgression.streak}{teamProgression.streak > 0 ? '🔥' : ''}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* League Standing */}
+            {teamStanding && (
+              <div className="mt-4 p-4 bg-green-900 bg-opacity-30 rounded-lg border-2 border-green-600">
+                <h4 className="font-bold text-white mb-3 flex items-center gap-2">
+                  🏅 League Standing
+                </h4>
+                <div className="grid grid-cols-4 gap-3 text-sm">
+                  <div className="bg-gray-700 rounded p-2">
+                    <p className="text-gray-400 text-xs">Position</p>
+                    <p className="text-green-300 font-bold text-lg">#{teamStanding.position}</p>
+                  </div>
+                  <div className="bg-gray-700 rounded p-2">
+                    <p className="text-gray-400 text-xs">Points</p>
+                    <p className="text-green-300 font-bold">{teamStanding.points}</p>
+                  </div>
+                  <div className="bg-gray-700 rounded p-2">
+                    <p className="text-gray-400 text-xs">Played</p>
+                    <p className="text-green-300 font-bold">{teamStanding.matchesPlayed}</p>
+                  </div>
+                  <div className="bg-gray-700 rounded p-2">
+                    <p className="text-gray-400 text-xs">Form</p>
+                    <p className="text-green-300 font-bold text-xs">{teamStanding.currentForm.slice(0, 5).join('')}</p>
                   </div>
                 </div>
               </div>
