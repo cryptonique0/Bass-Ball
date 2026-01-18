@@ -1057,12 +1057,12 @@ Built by the Bass Ball Team
 ---
 
 **Last Updated**: January 18, 2026  
-**Total Lines of Documentation**: ~200,000+  
+**Total Lines of Documentation**: ~250,000+  
 **Smart Contracts**: 12  
 **Test Cases**: 150+  
 **Strategic Docs**: PITCH.md, ARCHITECTURE_DECISIONS.md, ANTI_P2W_GUARANTEE.md, WHY_NOT_ONCHAIN.md  
 **UI/UX Docs**: DESIGN_SYSTEM.md, UI_DESIGN.md  
-**Game Systems Docs**: FOOTBALL_AI_SYSTEM.md, TACTICAL_SYSTEM.md  
+**Game Systems Docs**: FOOTBALL_AI_SYSTEM.md, TACTICAL_SYSTEM.md, TACTICS_ENGINE.md, BALL_PHYSICS.md, MATCH_EVENTS.md  
 **Implementation**: player-ai.ts (TypeScript PlayerAI class)  
-**Recent Improvements**: UI Polish ✅, Security Hardening ✅, Performance Optimization ✅, Design System ✅, Konami-Level Football AI ✅  
+**Recent Improvements**: UI Polish ✅, Security Hardening ✅, Performance Optimization ✅, Design System ✅, Konami-Level Football AI ✅, Ball Physics ✅, Match Events ✅  
 **Status**: Production Ready ✅
