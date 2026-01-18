@@ -1,0 +1,17 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "nodeVersion": "18.x",
+  "env": [
+    {
+      "key": "NEXT_PUBLIC_BASE_CHAIN_ID",
+      "value": "8453"
+    },
+    {
+      "key": "NEXT_PUBLIC_BASE_RPC",
+      "value": "https://mainnet.base.org"
+    }
+  ]
+}
