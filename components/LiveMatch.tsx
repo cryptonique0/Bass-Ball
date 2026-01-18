@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useAIMatch, usePvPMatch } from '@/hooks/useMatchEngine';
 import { Team } from '@/lib/gameEngine';
 import { MatchStats } from '@/lib/matchEngine';
+import MatchControls from './MatchControls';
 
 interface LiveMatchProps {
   homeTeam: Team;
@@ -18,7 +19,7 @@ export function LiveMatch({ homeTeam, awayTeam, mode, difficulty = 'normal' }: L
 
   const matchHook = mode === 'ai' ? useAIMatch(homeTeam, awayTeam) : usePvPMatch(homeTeam, awayTeam);
 
-  const { gameState, matchStats, isPaused, pause, resume, togglePause, selectPlayer, shoot, pass, resetMatch } = matchHook;
+  const { gameState, matchStats, isPaused, pause, resume, togglePause, selectPlayer, shoot, pass, sprint, tackle, resetMatch } = matchHook;
 
   const handlePitchClick = (e: React.MouseEvent<SVGSVGElement>) => {
     const svg = e.currentTarget;
@@ -190,23 +191,29 @@ export function LiveMatch({ homeTeam, awayTeam, mode, difficulty = 'normal' }: L
       {/* Match Events */}
       <MatchEventsLog stats={matchStats} />
 
-      {/* Controls */}
-      <div className="card p-6">
-        <div className="flex gap-3">
-          <button onClick={resetMatch} className="btn btn-secondary">
-            🔄 Reset Match
-          </button>
-          <button onClick={togglePause} className="btn btn-primary flex-1">
-            {isPaused ? '▶ Resume' : '⏸ Pause'}
-          </button>
-        </div>
+      {/* Controls Panel */}
+      <MatchControls
+        selectedPlayer={gameState.selectedPlayer || null}
+        gameTime={gameState.gameTime}
+        isPaused={isPaused}
+        onShoot={shoot}
+        onPass={pass}
+        onTackle={tackle}
+        onSprint={() => selectedPlayerId && sprint(selectedPlayerId)}
+        canSprint={selectedPlayerId ? (gameState.selectedPlayer?.stamina || 0) > 15 : false}
+        ballX={gameState.ballX}
+        ballY={gameState.ballY}
+        team={homeTeam.players.some((p) => p.id === selectedPlayerId) ? 'home' : 'away'}
+      />
 
-        {selectedPlayerId && (
-          <div className="mt-4 p-3 bg-blue-900 rounded">
-            <p className="text-sm text-gray-300">Selected: {gameState.selectedPlayer?.name}</p>
-            <p className="text-xs text-gray-400 mt-1">Click on the pitch to pass or shoot</p>
-          </div>
-        )}
+      {/* Reset & Pause Controls */}
+      <div className="card p-4 flex gap-3">
+        <button onClick={resetMatch} className="btn btn-secondary">
+          🔄 Reset Match
+        </button>
+        <button onClick={togglePause} className="btn btn-primary flex-1">
+          {isPaused ? '▶ Resume' : '⏸ Pause'}
+        </button>
       </div>
     </div>
   );

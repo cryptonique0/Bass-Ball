@@ -595,4 +595,99 @@ export class MatchEngine {
       return { type: 'move' };
     }
   }
+
+  /**
+   * Player activates sprint (stamina-based speed boost)
+   */
+  public activateSprint(playerId: string): void {
+    const player = [...this.gameState.homeTeam.players, ...this.gameState.awayTeam.players].find(
+      (p) => p.id === playerId
+    );
+
+    if (!player || player.stamina < 15) {
+      return; // Not enough stamina
+    }
+
+    // Drain 15% stamina
+    player.stamina = Math.max(0, player.stamina - 15);
+
+    // Temporarily boost pace (stored as temporary modifier)
+    const originalPace = player.pace;
+    player.pace = Math.min(99, player.pace + 20);
+
+    // Reset pace after 5 seconds (30 frames at 60fps)
+    setTimeout(() => {
+      player.pace = originalPace;
+    }, 5000);
+
+    this.recordEvent({
+      time: this.gameState.gameTime,
+      type: 'possession_change',
+      team: this.gameState.homeTeam.players.includes(player) ? 'home' : 'away',
+      player: player.name,
+      description: `⚡ ${player.name} sprints forward!`,
+    });
+  }
+
+  /**
+   * Player attempts to tackle (manual control)
+   */
+  public playerTackle(playerIdAttempting: string, playerIdTackling?: string): void {
+    const allPlayers = [...this.gameState.homeTeam.players, ...this.gameState.awayTeam.players];
+    const tackler = allPlayers.find((p) => p.id === playerIdAttempting);
+
+    if (!tackler || !this.ballPossessionPlayer) {
+      return;
+    }
+
+    const ballCarrier = allPlayers.find((p) => p.id === this.ballPossessionPlayer);
+    if (!ballCarrier) return;
+
+    // Check if in range
+    const distance = Math.hypot(tackler.x - ballCarrier.x, tackler.y - ballCarrier.y);
+    if (distance > 150) {
+      // Out of range
+      this.recordEvent({
+        time: this.gameState.gameTime,
+        type: 'tackle',
+        team: this.gameState.homeTeam.players.includes(tackler) ? 'home' : 'away',
+        player: tackler.name,
+        description: `${tackler.name} attempts a tackle but misses!`,
+      });
+      return;
+    }
+
+    // Calculate tackle success based on stats
+    const defenseSuccess = (tackler.defense / 100) * (1 - ballCarrier.dribbling / 200);
+
+    if (Math.random() < defenseSuccess) {
+      // Successful tackle
+      const tacklerTeam = this.gameState.homeTeam.players.includes(tackler) ? 'home' : 'away';
+      this.ballPossessionTeam = tacklerTeam;
+      this.ballPossessionPlayer = tackler.id;
+
+      this.recordEvent({
+        time: this.gameState.gameTime,
+        type: 'tackle',
+        team: tacklerTeam,
+        player: tackler.name,
+        description: `🛡️ ${tackler.name} wins the ball!`,
+      });
+
+      this.matchStats[tacklerTeam === 'home' ? 'homeTeam' : 'awayTeam'].tackles++;
+    } else if (Math.random() < 0.3) {
+      // Foul committed
+      const tacklerTeam = this.gameState.homeTeam.players.includes(tackler) ? 'home' : 'away';
+      this.commitFoul(tackler, tacklerTeam);
+    } else {
+      // Tackle defended
+      this.recordEvent({
+        time: this.gameState.gameTime,
+        type: 'tackle',
+        team: this.gameState.homeTeam.players.includes(tackler) ? 'home' : 'away',
+        player: tackler.name,
+        description: `${tackler.name}'s tackle is blocked!`,
+      });
+    }
+  }
 }

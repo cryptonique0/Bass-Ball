@@ -88,6 +88,16 @@ export function useMatchEngine({ homeTeam, awayTeam, isAI = true }: UseMatchEngi
     matchEngineRef.current.manualPass(targetX, targetY);
   }, []);
 
+  const sprint = useCallback((playerId: string) => {
+    if (!matchEngineRef.current) return;
+    matchEngineRef.current.activateSprint(playerId);
+  }, []);
+
+  const tackle = useCallback((playerId: string) => {
+    if (!matchEngineRef.current) return;
+    matchEngineRef.current.playerTackle(playerId);
+  }, []);
+
   const getAIMove = useCallback(() => {
     if (!matchEngineRef.current) return null;
     return matchEngineRef.current.getAIMove();
@@ -123,6 +133,8 @@ export function useMatchEngine({ homeTeam, awayTeam, isAI = true }: UseMatchEngi
     deselectPlayer,
     shoot,
     pass,
+    sprint,
+    tackle,
     getAIMove,
     resetMatch,
     matchEngine: matchEngineRef.current,
@@ -131,7 +143,7 @@ export function useMatchEngine({ homeTeam, awayTeam, isAI = true }: UseMatchEngi
 
 // Hook for PvP match between two players
 export function usePvPMatch(homeTeam: Team, awayTeam: Team) {
-  const { gameState, matchStats, isPaused, pause, resume, togglePause, selectPlayer, shoot, pass, resetMatch } =
+  const { gameState, matchStats, isPaused, pause, resume, togglePause, selectPlayer, shoot, pass, sprint, tackle, resetMatch } =
     useMatchEngine({
       homeTeam,
       awayTeam,
@@ -154,6 +166,8 @@ export function usePvPMatch(homeTeam: Team, awayTeam: Team) {
     selectPlayer,
     shoot,
     pass,
+    sprint,
+    tackle,
     resetMatch,
     activePlayer,
     switchPlayer,
@@ -162,7 +176,7 @@ export function usePvPMatch(homeTeam: Team, awayTeam: Team) {
 
 // Hook for AI match
 export function useAIMatch(homeTeam: Team, awayTeam: Team) {
-  const { gameState, matchStats, isPaused, pause, resume, togglePause, selectPlayer, shoot, pass, resetMatch, getAIMove } =
+  const { gameState, matchStats, isPaused, pause, resume, togglePause, selectPlayer, shoot, pass, sprint, tackle, resetMatch, getAIMove } =
     useMatchEngine({
       homeTeam,
       awayTeam,
@@ -200,6 +214,8 @@ export function useAIMatch(homeTeam: Team, awayTeam: Team) {
     selectPlayer,
     shoot,
     pass,
+    sprint,
+    tackle,
     resetMatch,
   };
 }
