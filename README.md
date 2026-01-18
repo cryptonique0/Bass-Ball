@@ -88,6 +88,15 @@ Complete technical specification: **20 markdown files, ~100,000 lines of code**
 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | Component library, Tailwind utilities, color palette, typography, spacing, animations, WCAG 2.1 AA accessibility |
 | [docs/UI_DESIGN.md](docs/UI_DESIGN.md) | UI/UX principles, mobile-first approach, responsive design, touch interactions, user flows, onboarding, in-game HUD, Web3 patterns |
 
+### Game Systems: Football Intelligence (Konami-Level)
+| File | Purpose |
+|------|---------|
+| [docs/FOOTBALL_AI_SYSTEM.md](docs/FOOTBALL_AI_SYSTEM.md) | Player AI architecture: 7 role archetypes, decision trees, behavioral weighting, difficulty scaling, deterministic seeding for verification |
+| [docs/TACTICAL_SYSTEM.md](docs/TACTICAL_SYSTEM.md) | Formation management: 5 core formations, 5 tactical presets (high press, possession, low block, wide play, counter), in-game adjustments, tactical overloads |
+| [src/ai/player-ai.ts](src/ai/player-ai.ts) | TypeScript PlayerAI class with role-specific decision methods (CB, FB, DM, CM, AM, Winger, Striker), difficulty modifiers |
+
+**Why This Matters**: Bass Ball differentiates itself through football depth that rivals Konami's PES/eFootball. Every player position has a complete decision tree (not stat-based AI). Tactical presets create different match dynamics. All decisions are deterministic and blockchain-verifiable. This is what makes bass Ball worth playing repeatedly.
+
 ### Layer 1: Frontend & User Experience
 | File | Purpose |
 |------|---------|
@@ -1024,10 +1033,12 @@ Built by the Bass Ball Team
 ---
 
 **Last Updated**: January 18, 2026  
-**Total Lines of Documentation**: ~150,000+  
+**Total Lines of Documentation**: ~200,000+  
 **Smart Contracts**: 12  
 **Test Cases**: 150+  
 **Strategic Docs**: PITCH.md, ARCHITECTURE_DECISIONS.md, ANTI_P2W_GUARANTEE.md, WHY_NOT_ONCHAIN.md  
 **UI/UX Docs**: DESIGN_SYSTEM.md, UI_DESIGN.md  
-**Recent Improvements**: UI Polish ✅, Security Hardening ✅, Performance Optimization ✅, Design System ✅  
+**Game Systems Docs**: FOOTBALL_AI_SYSTEM.md, TACTICAL_SYSTEM.md  
+**Implementation**: player-ai.ts (TypeScript PlayerAI class)  
+**Recent Improvements**: UI Polish ✅, Security Hardening ✅, Performance Optimization ✅, Design System ✅, Konami-Level Football AI ✅  
 **Status**: Production Ready ✅
