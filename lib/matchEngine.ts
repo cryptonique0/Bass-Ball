@@ -48,6 +48,26 @@ export interface PlayerCard {
   minute: number;
 }
 
+export interface AssistRecord {
+  assistPlayerId: string;
+  assistPlayerName: string;
+  goalPlayerId: string;
+  goalPlayerName: string;
+  minute: number;
+  team: 'home' | 'away';
+}
+
+export interface PlayerStats {
+  playerId: string;
+  playerName: string;
+  position: string;
+  goals: number;
+  assists: number;
+  shots: number;
+  passes: number;
+  tackles: number;
+}
+
 /**
  * Core Match Engine
  * Handles all match mechanics: goals, fouls, cards, stamina, possession
@@ -61,6 +81,9 @@ export class MatchEngine {
   private playerCards: Map<string, PlayerCard[]> = new Map();
   private frameCount = 0;
   private lastShotTeam: 'home' | 'away' | null = null;
+  private playerAssists: Map<string, AssistRecord[]> = new Map();
+  private playerGoals: Map<string, string[]> = new Map();
+  private passHistory: Array<{ playerId: string; playerName: string; team: 'home' | 'away'; time: number }> = [];
 
   constructor(gameState: GameState) {
     this.gameState = gameState;
@@ -94,9 +117,11 @@ export class MatchEngine {
       events: [],
     };
 
-    // Initialize player cards
+    // Initialize player cards and stats
     [...gameState.homeTeam.players, ...gameState.awayTeam.players].forEach((p) => {
       this.playerCards.set(p.id, []);
+      this.playerAssists.set(p.id, []);
+      this.playerGoals.set(p.id, []);
     });
   }
 
@@ -160,17 +185,17 @@ export class MatchEngine {
     let closestDist = Infinity;
     let closestTeam: 'home' | 'away' | null = null;
 
-    allPlayers.forEach((p) => {
+    for (const p of allPlayers) {
       const dist = Math.hypot(p.x - ball.ballX, p.y - ball.ballY);
       if (dist < closestDist && dist < 80) {
         closestDist = dist;
         closestPlayer = p;
         closestTeam = this.gameState.homeTeam.players.includes(p) ? 'home' : 'away';
       }
-    });
+    }
 
     // Update possession
-    if (closestPlayer && closestTeam) {
+    if (closestPlayer !== null && closestTeam !== null) {
       if (this.ballPossessionPlayer !== closestPlayer.id) {
         this.ballPossessionPlayer = closestPlayer.id;
         this.ballPossessionTeam = closestTeam;
@@ -312,12 +337,34 @@ export class MatchEngine {
       this.matchStats.awayTeam.goals++;
     }
 
+    // Track goal for this player
+    const goalsArray = this.playerGoals.get(player.id) || [];
+    goalsArray.push(`${this.gameState.gameTime}'`);
+    this.playerGoals.set(player.id, goalsArray);
+
     // Find potential assist maker (last passer before goal)
-    const assistingPlayer = this.findLastPasser(team);
+    const assistInfo = this.findLastPasserWithId(team);
     let assistText = '';
-    if (assistingPlayer) {
+    let assistingPlayerId: string | null = null;
+    
+    if (assistInfo) {
       this.matchStats[team === 'home' ? 'homeTeam' : 'awayTeam'].assists++;
-      assistText = ` (Assist: ${assistingPlayer})`;
+      assistText = ` (Assist: ${assistInfo.name})`;
+      assistingPlayerId = assistInfo.id;
+
+      // Record assist for player
+      const assistRecord: AssistRecord = {
+        assistPlayerId: assistInfo.id,
+        assistPlayerName: assistInfo.name,
+        goalPlayerId: player.id,
+        goalPlayerName: player.name,
+        minute: Math.floor(this.gameState.gameTime),
+        team,
+      };
+      
+      const assists = this.playerAssists.get(assistInfo.id) || [];
+      assists.push(assistRecord);
+      this.playerAssists.set(assistInfo.id, assists);
     }
 
     this.recordEvent({
@@ -326,6 +373,10 @@ export class MatchEngine {
       team,
       player: player.name,
       description: `⚽ GOAL! ${player.name} scores for ${team === 'home' ? 'HOME' : 'AWAY'}!${assistText}`,
+      details: {
+        goalScorer: player.id,
+        assister: assistingPlayerId,
+      },
     });
   }
 
@@ -333,16 +384,114 @@ export class MatchEngine {
    * Find the last player who passed to current ball carrier (for assists)
    */
   private findLastPasser(team: 'home' | 'away'): string | null {
-    // Get last pass event for this team
-    const recentPasses = this.matchStats.events
-      .filter((e) => e.type === 'pass' && e.team === team)
+    const result = this.findLastPasserWithId(team);
+    return result ? result.name : null;
+  }
+
+  /**
+   * Find the last passer with ID and name (for detailed assist tracking)
+   */
+  private findLastPasserWithId(team: 'home' | 'away'): { id: string; name: string } | null {
+    // Check recent pass history (last 10 seconds / ~600 frames)
+    const currentTime = this.gameState.gameTime;
+    const recentPasses = this.passHistory
+      .filter((p) => p.team === team && currentTime - p.time <= 10)
       .reverse()
       .slice(0, 1);
 
     if (recentPasses.length > 0) {
-      return recentPasses[0].player;
+      return {
+        id: recentPasses[0].playerId,
+        name: recentPasses[0].playerName,
+      };
+    }
+
+    // Fallback: check match events
+    const recentPassEvents = this.matchStats.events
+      .filter((e) => e.type === 'pass' && e.team === team)
+      .reverse()
+      .slice(0, 1);
+
+    if (recentPassEvents.length > 0) {
+      const player = [...this.gameState.homeTeam.players, ...this.gameState.awayTeam.players].find(
+        (p) => p.name === recentPassEvents[0].player
+      );
+      if (player) {
+        return {
+          id: player.id,
+          name: player.name,
+        };
+      }
     }
     return null;
+  }
+
+  /**
+   * Record a player pass (called internally)
+   */
+  private recordPass(playerId: string, playerName: string, team: 'home' | 'away'): void {
+    this.passHistory.push({
+      playerId,
+      playerName,
+      team,
+      time: this.gameState.gameTime,
+    });
+    // Keep only recent passes (last 20 seconds)
+    if (this.passHistory.length > 100) {
+      this.passHistory.shift();
+    }
+  }
+
+  /**
+   * Get all assists for a player
+   */
+  public getPlayerAssists(playerId: string): AssistRecord[] {
+    return this.playerAssists.get(playerId) || [];
+  }
+
+  /**
+   * Get player statistics summary
+   */
+  public getPlayerStats(playerId: string): PlayerStats | null {
+    const player = [...this.gameState.homeTeam.players, ...this.gameState.awayTeam.players].find(
+      (p) => p.id === playerId
+    );
+    if (!player) return null;
+
+    const goals = this.playerGoals.get(playerId)?.length || 0;
+    const assists = this.playerAssists.get(playerId)?.length || 0;
+
+    // Count shots and passes from events
+    const playerEvents = this.matchStats.events.filter((e) => e.player === player.name);
+    const shots = playerEvents.filter((e) => e.type === 'shot').length;
+    const passes = playerEvents.filter((e) => e.type === 'pass').length;
+    const tackles = playerEvents.filter((e) => e.type === 'tackle').length;
+
+    return {
+      playerId,
+      playerName: player.name,
+      position: player.position,
+      goals,
+      assists,
+      shots,
+      passes,
+      tackles,
+    };
+  }
+
+  /**
+   * Get top players by assists
+   */
+  public getTopAssists(team: 'home' | 'away', limit: number = 3): Array<{ player: string; assists: number }> {
+    const teamPlayers = team === 'home' ? this.gameState.homeTeam.players : this.gameState.awayTeam.players;
+    return teamPlayers
+      .map((p) => ({
+        player: p.name,
+        assists: this.playerAssists.get(p.id)?.length || 0,
+      }))
+      .filter((p) => p.assists > 0)
+      .sort((a, b) => b.assists - a.assists)
+      .slice(0, limit);
   }
 
   /**
@@ -499,6 +648,9 @@ export class MatchEngine {
       this.gameState.ballX = recipient.x;
       this.gameState.ballY = recipient.y;
 
+      // Record pass for assist tracking
+      this.recordPass(player.id, player.name, team);
+
       this.recordEvent({
         time: this.gameState.gameTime,
         type: 'pass',
@@ -560,11 +712,15 @@ export class MatchEngine {
   /**
    * Record match event
    */
-  private recordEvent(event: Omit<MatchEvent, 'details'>): void {
-    this.matchStats.events.push({
-      ...event,
-      details: {},
-    });
+  private recordEvent(event: Omit<MatchEvent, 'details'> | MatchEvent): void {
+    if ('details' in event && event.details) {
+      this.matchStats.events.push(event as MatchEvent);
+    } else {
+      this.matchStats.events.push({
+        ...event,
+        details: {},
+      });
+    }
   }
 
   /**
