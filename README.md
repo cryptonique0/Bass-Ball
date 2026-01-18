@@ -29,6 +29,43 @@ Bass Ball is a decentralized football simulation game where:
 
 ---
 
+## 🏆 Why Bass Ball Wins
+
+Most Web3 games fail because they are:
+- Pay-to-win
+- Not verifiable
+- Not fun without tokens
+- Impossible to trust
+
+Bass Ball solves all four:
+
+| Problem | Bass Ball Solution |
+|------|-------------------|
+| Server cheating | Public replay verification |
+| Pay-to-win | Zero stat-affecting monetization |
+| Fake randomness | Blockhash-seeded deterministic engine |
+| Web3 UX friction | Guest play + gasless onboarding |
+| Skill dilution | Server-authoritative, tick-locked inputs |
+
+Bass Ball is designed to survive **bear markets**, **cheaters**, and **regulatory scrutiny**.
+
+---
+
+## 🆚 Comparison
+
+| Feature | Bass Ball | Typical Web3 Game | Web2 Sports Game |
+|------|----------|------------------|-----------------|
+| Skill-based | ✅ | ❌ | ✅ |
+| Replay verification | ✅ | ❌ | ❌ |
+| On-chain results | ✅ | ⚠️ | ❌ |
+| Pay-to-win | ❌ | ✅ | ⚠️ |
+| Gasless UX | ✅ | ❌ | N/A |
+| Server trust required | ❌ | ✅ | ✅ |
+
+**Why it matters**: Bass Ball combines the skill-based gameplay of Web2 sports games with the transparency and true ownership of Web3—without the pay-to-win trap that kills most crypto games.
+
+---
+
 ## 📚 Documentation
 
 Complete technical specification: **20 markdown files, ~100,000 lines of code**
@@ -445,6 +482,81 @@ else:
 - ✅ RNG can't be manipulated (tied to blockhash)
 - ✅ Client can't hack stats (server authoritative)
 - ✅ Anyone can verify (public replay verification)
+
+---
+
+## 🛡 Threat Model
+
+Bass Ball explicitly defends against:
+
+### Adversary Types
+- Malicious clients (memory hacks, packet injection)
+- Dishonest servers
+- RNG manipulation
+- Replay tampering
+- Whale economic dominance
+- Bot farms
+
+### Non-Goals
+- We do NOT attempt to prevent:
+  - Players sharing accounts
+  - Off-platform collusion
+  - Human smurfing
+
+### Security Philosophy
+- Detect > Prevent > Prove
+- Every critical outcome is verifiable post-match
+
+---
+
+## ⚖️ Known Limitations & Tradeoffs
+
+Bass Ball makes conscious design tradeoffs to prioritize fairness and verifiability:
+
+| Limitation | Why It Exists | Impact |
+|-----------|---------------|--------|
+| Full replay verification is compute-heavy | Ensures complete fraud detection | Long matches require more compute to verify |
+| ERC-4337 Paymaster costs scale | Decentralization requires transparency | Cost ≈ $48k/month at scale |
+| 11v11 real-time limits mobile battery | Skill-based competitive gameplay | Mobile devices need optimization or external display |
+| Deterministic simulation restricts physics | Ensures replay reproducibility | Less emergent/physics-based gameplay |
+
+These tradeoffs are intentional to preserve:
+- ✅ **Fairness**: No hidden advantages or pay-to-win mechanics
+- ✅ **Verifiability**: Every outcome is mathematically provable
+- ✅ **Competitive Integrity**: Same inputs always produce same outputs
+
+---
+
+## 🏛 Governance Safety Rails
+
+Governance is powerful—but only within guardrails. This prevents governance capture and pay-to-win proposals.
+
+### Governance CANNOT Vote On:
+- ❌ Match engine physics
+- ❌ Player stat formulas
+- ❌ Anti-cheat thresholds
+- ❌ RNG sources
+- ❌ Anything affecting competitive balance
+
+### Governance CAN Vote On:
+- ✅ New leagues and tournaments
+- ✅ Tournament formats and brackets
+- ✅ Cosmetic themes and NFT designs
+- ✅ Seasonal rewards and prize pools
+- ✅ Team sponsorship partnerships
+- ✅ Community features (guilds, clans, etc.)
+- ✅ Treasury allocation for development
+
+### Why These Rails?
+
+| Topic | Risk Without Rails | Protected By | Enforced By |
+|-------|-------------------|--------------|-------------|
+| Match physics | Pay-to-win advantage | Safety rails | Client code (immutable) |
+| Stat formulas | Whale manipulation | Safety rails | Server code (immutable) |
+| Anti-cheat rules | Cheater-friendly votes | Safety rails | Deterministic validation |
+| RNG sources | Rigged randomness | Safety rails | Blockchain (on-chain) |
+
+**Governance is for community expression, not for breaking fairness.**
 
 ---
 
