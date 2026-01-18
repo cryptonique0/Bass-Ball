@@ -89,13 +89,37 @@ Complete technical specification: **20 markdown files, ~100,000 lines of code**
 | [docs/UI_DESIGN.md](docs/UI_DESIGN.md) | UI/UX principles, mobile-first approach, responsive design, touch interactions, user flows, onboarding, in-game HUD, Web3 patterns |
 
 ### Game Systems: Football Intelligence (Konami-Level)
+
+**Player AI & Role Identity**
 | File | Purpose |
 |------|---------|
 | [docs/FOOTBALL_AI_SYSTEM.md](docs/FOOTBALL_AI_SYSTEM.md) | Player AI architecture: 7 role archetypes, decision trees, behavioral weighting, difficulty scaling, deterministic seeding for verification |
-| [docs/TACTICAL_SYSTEM.md](docs/TACTICAL_SYSTEM.md) | Formation management: 5 core formations, 5 tactical presets (high press, possession, low block, wide play, counter), in-game adjustments, tactical overloads |
 | [src/ai/player-ai.ts](src/ai/player-ai.ts) | TypeScript PlayerAI class with role-specific decision methods (CB, FB, DM, CM, AM, Winger, Striker), difficulty modifiers |
 
-**Why This Matters**: Bass Ball differentiates itself through football depth that rivals Konami's PES/eFootball. Every player position has a complete decision tree (not stat-based AI). Tactical presets create different match dynamics. All decisions are deterministic and blockchain-verifiable. This is what makes bass Ball worth playing repeatedly.
+**Tactical System & Formation Management**
+| File | Purpose |
+|------|---------|
+| [docs/TACTICAL_SYSTEM.md](docs/TACTICAL_SYSTEM.md) | Formation logic: 5 core formations, pressing triggers, line height/width management, stamina impact on positioning |
+| [docs/TACTICS_ENGINE.md](docs/TACTICS_ENGINE.md) | Detailed formation mechanics: compactness, pressing triggers, line adjustments, midfield gaps, stamina penalties |
+
+**Physics & Ball Dynamics**
+| File | Purpose |
+|------|---------|
+| [docs/BALL_PHYSICS.md](docs/BALL_PHYSICS.md) | Deterministic physics: spin/curl mechanics, first touch quality, foot dominance, collision resolution, replay reproducibility |
+
+**Match Events & Realism**
+| File | Purpose |
+|------|---------|
+| [docs/MATCH_EVENTS.md](docs/MATCH_EVENTS.md) | Event system: fouls, advantage rule, set pieces (corners, free kicks, penalties), injuries, referee logic, dispute resolution |
+
+**Why This Matters**: Bass Ball achieves Konami-level depth through:
+- **Skill-Based AI**: Every role has decision trees, not stats (CB reads play differently than Striker)
+- **Tactical Variety**: 5 formations × 5 presets × dynamic adjustments = 25+ distinct playstyles
+- **Physics Authenticity**: Ball curves, spins, bounces with deterministic seeding (verifiable via blockchain)
+- **Realism Layer**: Fouls, set pieces, injuries, fatigue make matches feel like real football
+- **Verification**: All decisions/physics hashed and blockchain-anchored for replay verification
+
+Without these systems, matches feel arcade. With them, Bass Ball becomes a **replayable, skill-expressive competitive game**.
 
 ### Layer 1: Frontend & User Experience
 | File | Purpose |
