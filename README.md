@@ -186,6 +186,33 @@ Without these systems, matches feel arcade. With them, Bass Ball becomes a **rep
 |------|---------|
 | [docs/CUSTOM_MATCH_RULES.md](docs/CUSTOM_MATCH_RULES.md) | Friendly match modifiers (physics: gravity/friction/spin, stamina, time, cards, formations, visuals), modifier stacking (1-6 modifiers, balance validation), rule set creator tools (SDK, validator, balance scoring), community tournament rule sets (publish, rate, featured), anti-cheat validation (no stat boosts, no hidden mechanics, no ELO manipulation), official rule sets (Classic, Arcade, Tactical, Speed Run, Challenge, Symmetry, Experimental), creative experimentation without breaking competitive integrity |
 
+### High-Impact Optional Additions (Future Roadmap)
+
+**AI Career Mode (Single-Player Progression)**
+| File | Purpose |
+|------|---------|
+| [docs/AI_CAREER_MODE.md](docs/AI_CAREER_MODE.md) | Career mode vs AI opponents trained on real player behavior data, multi-season progression with transfer system, AI tactical adaptation in-match, dynamic difficulty scaling, career-to-ranked ELO integration, hall of fame for legendary seasons |
+
+**AI Coaching System (Skill Development)**
+| File | Purpose |
+|------|---------|
+| [docs/AI_COACHING_SYSTEM.md](docs/AI_COACHING_SYSTEM.md) | AI coaches trained on top player tactics, post-match tactical analysis, in-match coaching hints, personalized training plans with practice scenarios, coach effectiveness tracking, coaching specializations (pressing, build-up, counter-attack, set pieces), coach-player relationships and progression |
+
+**Cross-Platform Replay Verification (Infrastructure)**
+| File | Purpose |
+|------|---------|
+| [docs/CROSS_PLATFORM_VERIFICATION.md](docs/CROSS_PLATFORM_VERIFICATION.md) | Universal replay format (works on PC/console/mobile/web), deterministic physics simulator (any device), cross-platform verification certificates, web verifier, mobile native apps, verification API for third-party tools, IPFS/blockchain portability |
+
+**Analyst API (Ecosystem)**
+| File | Purpose |
+|------|---------|
+| [docs/ANALYST_API.md](docs/ANALYST_API.md) | Open REST API for match data, advanced statistics, replay downloads, heatmaps and pass networks, xG analysis, leaderboard queries, stream overlay data, highlight detection, content creator tools (OBS integration, StreamDeck support, Twitch extensions), research tier access |
+
+**Strategic Gaps: Closing Distance to Football Authenticity (Vision)**
+| File | Purpose |
+|------|---------|
+| [docs/STRATEGIC_GAPS.md](docs/STRATEGIC_GAPS.md) | Analysis of 5 remaining gaps: Football depth (advanced role system, possession archetypes, set piece choreography), Tactical identity (tactical stances, named philosophies like Tiki-Taka), Long-term progression (career arcs, legacy systems), Social gravity (club progression, friend cosmetics), Broadcast level presentation (dynamic cameras, tactical graphics, streamer integration). Roadmap for transforming "Web3 game that is football" → "football game that uses Web3" |
+
 **Why This Matters**: Bass Ball layers **multiple engagement systems** to create a complete player ecosystem:
 
 1. **Skill-Based Progression** (Skill Mastery): 7 role-specific progressions, 10 playstyle badges, blockchain verification
