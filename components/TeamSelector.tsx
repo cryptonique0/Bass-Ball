@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Team } from '@/lib/gameEngine';
 import { FormationType, FORMATIONS, applyFormation } from '@/lib/formations';
+import { TeamCustomizationManager } from '@/lib/teamCustomization';
+import { TeamOwnershipNFTManager } from '@/lib/teamOwnershipNFT';
+import { SeasonalRankingNFTManager } from '@/lib/seasonalRankingNFT';
 
 interface TeamSelectorProps {
   teams: { home: Team; away: Team };
@@ -13,9 +16,37 @@ interface TeamSelectorProps {
 export function TeamSelector({ teams, onSelect, onCancel }: TeamSelectorProps) {
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
   const [selectedFormation, setSelectedFormation] = useState<FormationType>('4-3-3');
+  const [showCustomization, setShowCustomization] = useState(false);
 
   const currentTeam = selectedTeam === 'home' ? teams.home : teams.away;
   const currentFormation = FORMATIONS[selectedFormation];
+
+  // Get team customization
+  const customizationMgr = TeamCustomizationManager.getInstance();
+  const teamCustomization = useMemo(
+    () => customizationMgr.getTeamCustomization(currentTeam.id || ''),
+    [currentTeam.id, customizationMgr]
+  );
+
+  // Get team ownership
+  const ownershipMgr = TeamOwnershipNFTManager.getInstance();
+  const teamOwnership = useMemo(
+    () => ownershipMgr.getTeamCurrentOwner(currentTeam.id || ''),
+    [currentTeam.id, ownershipMgr]
+  );
+
+  // Get seasonal ranking
+  const seasonalMgr = SeasonalRankingNFTManager.getInstance();
+  const currentSeason = useMemo(() => seasonalMgr.getCurrentSeason(), [seasonalMgr]);
+  const teamRanking = useMemo(
+    () =>
+      currentSeason
+        ? seasonalMgr.getSeasonalNFTs(currentSeason.seasonId).find(
+            nft => nft.playerTeam === currentTeam.name
+          )
+        : undefined,
+    [currentTeam.name, currentSeason, seasonalMgr]
+  );
 
   const handleConfirm = () => {
     onSelect(selectedFormation, selectedTeam);
@@ -31,10 +62,11 @@ export function TeamSelector({ teams, onSelect, onCancel }: TeamSelectorProps) {
         </div>
 
         <div className="p-6">
-          {/* Team Selection */}
+          {/* Team Selection with Customization & Ownership */}
           <div className="mb-8">
             <h3 className="text-xl font-bold text-white mb-4">Select Team</h3>
             <div className="grid grid-cols-2 gap-4">
+              {/* Home Team */}
               <button
                 onClick={() => setSelectedTeam('home')}
                 className={`p-4 rounded-lg border-2 transition-all ${
@@ -47,6 +79,7 @@ export function TeamSelector({ teams, onSelect, onCancel }: TeamSelectorProps) {
                 <div className="text-sm text-gray-300 mt-1">{teams.home.players.length} players</div>
               </button>
 
+              {/* Away Team */}
               <button
                 onClick={() => setSelectedTeam('away')}
                 className={`p-4 rounded-lg border-2 transition-all ${
@@ -59,6 +92,125 @@ export function TeamSelector({ teams, onSelect, onCancel }: TeamSelectorProps) {
                 <div className="text-sm text-gray-300 mt-1">{teams.away.players.length} players</div>
               </button>
             </div>
+
+            {/* Team Customization Badge Preview */}
+            {teamCustomization && (
+              <div className="mt-4 p-4 bg-gray-700 rounded-lg border-2 border-gray-600">
+                <h4 className="font-bold text-white mb-3 flex items-center gap-2">
+                  🎨 Team Branding
+                </h4>
+                <div className="grid grid-cols-3 gap-3">
+                  {/* Team Colors */}
+                  <div>
+                    <p className="text-xs text-gray-400 mb-2">Colors</p>
+                    <div className="flex gap-2">
+                      <div
+                        className="w-8 h-8 rounded border border-gray-400"
+                        style={{ backgroundColor: teamCustomization.teamColors.primary }}
+                        title="Primary"
+                      />
+                      <div
+                        className="w-8 h-8 rounded border border-gray-400"
+                        style={{ backgroundColor: teamCustomization.teamColors.secondary }}
+                        title="Secondary"
+                      />
+                      <div
+                        className="w-8 h-8 rounded border border-gray-400"
+                        style={{ backgroundColor: teamCustomization.teamColors.accent }}
+                        title="Accent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Jersey Preview */}
+                  <div>
+                    <p className="text-xs text-gray-400 mb-2">Home Jersey</p>
+                    <div
+                      className="h-8 rounded border-2 flex items-center justify-center text-white font-bold text-xs"
+                      style={{
+                        background: `linear-gradient(90deg, ${teamCustomization.jerseyHome.primary} 50%, ${teamCustomization.jerseyHome.secondary} 50%)`,
+                      }}
+                    >
+                      JERSEY
+                    </div>
+                  </div>
+
+                  {/* Badge */}
+                  {teamCustomization.currentBadge && (
+                    <div>
+                      <p className="text-xs text-gray-400 mb-2">Badge</p>
+                      <div
+                        className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-white font-bold text-xs"
+                        style={{
+                          backgroundColor: teamCustomization.currentBadge.colors.primary,
+                          borderColor: teamCustomization.currentBadge.colors.accent,
+                        }}
+                      >
+                        B
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Team Ownership Info */}
+            {teamOwnership && (
+              <div className="mt-4 p-4 bg-blue-900 bg-opacity-40 rounded-lg border-2 border-blue-600">
+                <h4 className="font-bold text-white mb-2 flex items-center gap-2">
+                  👑 Team Ownership
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-gray-400">Ownership Stake</p>
+                    <p className="text-blue-300 font-bold">{teamOwnership.ownershipPercentage}%</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Tier</p>
+                    <p className="text-blue-300 font-bold capitalize">{teamOwnership.ownershipTier}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Voting Rights</p>
+                    <p className={teamOwnership.votingRights ? 'text-green-400' : 'text-red-400'}>
+                      {teamOwnership.votingRights ? '✓ Enabled' : '✗ None'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Win Rate</p>
+                    <p className="text-blue-300 font-bold">
+                      {teamOwnership.teamWinPercentage.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Seasonal Ranking Badge */}
+            {teamRanking && (
+              <div className="mt-4 p-4 bg-yellow-900 bg-opacity-30 rounded-lg border-2 border-yellow-600">
+                <h4 className="font-bold text-white mb-2 flex items-center gap-2">
+                  🏆 {teamRanking.seasonName} - {teamRanking.badge.toUpperCase()}
+                </h4>
+                <div className="grid grid-cols-4 gap-2 text-sm">
+                  <div>
+                    <p className="text-gray-400">Rank</p>
+                    <p className="text-yellow-300 font-bold">#{teamRanking.finalRank}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Points</p>
+                    <p className="text-yellow-300 font-bold">{teamRanking.totalPoints}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Goals</p>
+                    <p className="text-green-400 font-bold">⚽{teamRanking.goalsScored}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Rating</p>
+                    <p className="text-yellow-300 font-bold">{teamRanking.averageRating}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Formation Selection */}
