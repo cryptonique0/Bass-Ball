@@ -121,6 +121,32 @@ Complete technical specification: **20 markdown files, ~100,000 lines of code**
 
 Without these systems, matches feel arcade. With them, Bass Ball becomes a **replayable, skill-expressive competitive game**.
 
+### Game Systems: Progression & Anti-Pay-To-Win (Very Important)
+
+**Skill Mastery Progression System**
+| File | Purpose |
+|------|---------|
+| [docs/PROGRESSION_SYSTEM.md](docs/PROGRESSION_SYSTEM.md) | Skill-based progression without pay-to-win: 7 role masteries (0-100% per role), 10 playstyle badges earned through repeated skill expression, anti-cheat verification, leaderboard integration |
+
+**Cosmetics Monetization (Zero Stat Impact)**
+| File | Purpose |
+|------|---------|
+| [docs/COSMETICS_MONETIZATION.md](docs/COSMETICS_MONETIZATION.md) | Revenue model with cosmetics-only constraint: 5 cosmetics categories ($0.99-$24.99), battle pass system ($9.99/season), NFT cosmetics (ERC-721), community verification, $300k-$3.75M revenue projections |
+
+**Ranked Competitive System**
+| File | Purpose |
+|------|---------|
+| [docs/RANKED_SYSTEM.md](docs/RANKED_SYSTEM.md) | ELO ranking system: 10 tiers (Bronze→Godslayer), placement matches, seasonal resets, anti-smurfing detection, global/tier-specific/role-specific leaderboards |
+
+**Why This Matters**: Players earn progression through **pure skill expression**:
+- **Skill Mastery**: 7 role-specific progressions (Passing accuracy, Tackle timing, Shot placement under pressure)
+- **Playstyle Badges**: 10 badges (Iron Wall, Press Resistant, Interception Master, Finishing Expert, Dead Ball Specialist, Counter Specialist, Tempo Master, Box-to-Box Dynamo, Dribble Master, All-Around Threat)
+- **Blockchain Verified**: All badges prove-hashable, preventing stat padding and boosting
+- **Cosmetics-Only Monetization**: Zero stat-affecting items, revenue from cosmetics ($0.99-$24.99), battle pass ($9.99/season), NFT marketplace
+- **Ranked Integrity**: ELO-based competitive tier system with anti-smurfing, anti-reverse-boosting, demotion protection
+
+Without progression meaning, players churn. With skill-based mastery + cosmetics-only monetization, Bass Ball guarantees **fair play and sustainable engagement**.
+
 ### Layer 1: Frontend & User Experience
 | File | Purpose |
 |------|---------|
