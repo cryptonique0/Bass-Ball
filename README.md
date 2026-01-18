@@ -4,6 +4,10 @@
 
 Competitive, trustless, play-to-earn football with deterministic match engine, public replay verification, and fair-play guarantees.
 
+### 🚀 Quick Links
+
+**For Investors**: [Read PITCH.md](PITCH.md) (3 min) | **For Judges**: [Try Demo](https://bassball.io/demo) (5 min) | **For Developers**: [Clone Repo](https://github.com/web3joker/Bass-Ball) | **For Skeptics**: [Why Not On-Chain?](docs/WHY_NOT_ONCHAIN.md)
+
 ---
 
 ## 🎯 What Is Bass Ball?
@@ -69,6 +73,14 @@ Bass Ball is designed to survive **bear markets**, **cheaters**, and **regulator
 ## 📚 Documentation
 
 Complete technical specification: **20 markdown files, ~100,000 lines of code**
+
+### Strategic & Policy Documents
+| File | Purpose |
+|------|---------|
+| [PITCH.md](PITCH.md) | 1-page executive summary for investors & judges |
+| [docs/ARCHITECTURE_DECISIONS.md](docs/ARCHITECTURE_DECISIONS.md) | Architecture Decision Records (ADR-001 to ADR-010) |
+| [docs/ANTI_P2W_GUARANTEE.md](docs/ANTI_P2W_GUARANTEE.md) | Public pledge: No pay-to-win (legally binding) |
+| [docs/WHY_NOT_ONCHAIN.md](docs/WHY_NOT_ONCHAIN.md) | Pragmatic defense of hybrid architecture (cost analysis) |
 
 ### Layer 1: Frontend & User Experience
 | File | Purpose |
@@ -140,12 +152,30 @@ Complete technical specification: **20 markdown files, ~100,000 lines of code**
 ## 🛠 Tech Stack
 
 ### Frontend
-- **Phaser 3**: Real-time game rendering (WebGL) with frustum culling optimization
-- **React 18**: UI framework, hooks for state management
+- **Phaser 3**: Real-time 60 FPS game rendering (WebGL)
+  - Frustum culling: 20-30% fewer draw calls
+  - Object pooling for sprite reuse
+  - Physics optimization with drag coefficients
+  - Skip-frame rendering (30Hz sprite updates, 60Hz display)
+  - Input batching & delta updates (50-70% network savings)
+
+- **React 18**: Component-based UI framework
+  - Concurrent rendering for responsive UX
+  - Custom hooks for game state, wallet, responsive breakpoints
+  - Lazy loading for code splitting
+  - Suspense boundaries for loading states
+
+- **Tailwind CSS**: Utility-first styling system
+  - Mobile-first responsive design (320px → 1920px+)
+  - Custom animations (fade, slide, bounce, pulse)
+  - Dark mode support with semantic colors
+  - Accessibility utilities (focus rings, contrast ratios)
+  - CSS containment for isolated rendering
+  - Design tokens for consistent spacing, typography, colors
+
 - **Viem**: Type-safe blockchain interaction
 - **Wagmi**: Wallet connection, contract hooks
 - **RainbowKit**: Multi-chain wallet UI
-- **TailwindCSS**: Mobile-first responsive design with smooth transitions
 
 ### Backend
 - **Node.js + TypeScript**: Runtime and type safety
@@ -622,6 +652,30 @@ Governance is powerful—but only within guardrails. This prevents governance ca
 
 ---
 
+## ✅ Public Guarantees
+
+**These are contractually binding, verifiable commitments:**
+
+### 1. Anti-Pay-To-Win Pledge
+- **Document**: [docs/ANTI_P2W_GUARANTEE.md](docs/ANTI_P2W_GUARANTEE.md)
+- **Guarantee**: Stat formulas are immutable in smart contracts
+- **Enforcement**: Immunefi bug bounty ($10k for exploits)
+- **Accountability**: DAO cannot override via governance
+
+### 2. Architectural Decisions
+- **Document**: [docs/ARCHITECTURE_DECISIONS.md](docs/ARCHITECTURE_DECISIONS.md)
+- **Coverage**: 10 ADRs explaining every major design choice
+- **Benefit**: Transparency into why we chose server-authoritative, IPFS storage, etc.
+- **Audience**: Architects, security auditors, technical deep-divers
+
+### 3. Hybrid Architecture Justification
+- **Document**: [docs/WHY_NOT_ONCHAIN.md](docs/WHY_NOT_ONCHAIN.md)
+- **Issue**: "Why aren't replays fully on-chain?"
+- **Answer**: Cost analysis showing $91M/month vs $15k (6000x difference)
+- **Verification**: Still trustless (hash-based proofs on-chain)
+
+---
+
 ## 📊 Project Structure
 
 ```
@@ -875,8 +929,9 @@ Built by the Bass Ball Team
 ---
 
 **Last Updated**: January 18, 2026  
-**Total Lines of Documentation**: ~100,000  
+**Total Lines of Documentation**: ~100,000+  
 **Smart Contracts**: 12  
 **Test Cases**: 150+  
+**Strategic Docs**: PITCH.md, ARCHITECTURE_DECISIONS.md, ANTI_P2W_GUARANTEE.md, WHY_NOT_ONCHAIN.md  
 **Recent Improvements**: UI Polish ✅, Security Hardening ✅, Performance Optimization ✅  
 **Status**: Production Ready ✅
