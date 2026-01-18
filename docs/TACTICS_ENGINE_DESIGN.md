@@ -1171,6 +1171,449 @@ function evaluatePlayerBehavior(
 6. ✅ **Legible**: Each press signal can be logged and analyzed
 7. ✅ **Priority-Based**: Conflicts resolved by priority, not RNG
 
+### 2.1.7 Stamina and Fatigue System
+
+**Purpose**: Stamina does not reduce stats directly (no "70% accuracy when tired"). Instead, it affects timing and eligibility, keeping the game fair while rewarding fitness management.
+
+**Core Problem with Stat Reduction**:
+- ❌ "Tired players have 70% passing accuracy" feels unfair (bad luck, not playstyle)
+- ❌ Encourages rotation (just swap out tired players = no tension)
+- ❌ Stat changes are invisible (player doesn't know why they failed)
+
+**Solution**: Stamina affects three mechanics:
+1. **Reaction Delay**: Tired players respond slower (takes more frames to execute)
+2. **Max Acceleration**: Tired players can't reach top speed as quickly
+3. **Pressing Eligibility**: Tired players can't respond to certain pressing triggers
+
+**Stamina Model**:
+
+```typescript
+interface PlayerStamina {
+  player: Player;
+  
+  // Stamina pool (0–100)
+  current: number;
+  max: number;                    // Can vary by player fitness stat
+  
+  // Stamina drain per activity
+  drainPerFrame: number;          // Base drain (moving, existing)
+  drainPerSprint: number;         // Accelerating hard
+  drainPerPress: number;          // Engaging in pressing action
+  
+  // Recovery
+  recoveryPerFrame: number;       // When jogging/holding zone
+  recoveryPerRest: number;        // When stationary
+  
+  // Fatigue state (derived from stamina)
+  fatigueLevel: enum;             // "fresh" | "normal" | "tired" | "exhausted"
+}
+
+// Stamina lifecycle (per frame)
+function updatePlayerStamina(
+  player: Player,
+  currentAction: PlayerAction,
+  gameState: GameState
+): void {
+  
+  let staminaDrain = 0.2;  // Base drain per frame (existing)
+  
+  // Increase drain based on activity intensity
+  if (currentAction.actionType === "press") {
+    staminaDrain += 0.5;   // Pressing is intense
+  } else if (currentAction.actionType === "carry_ball") {
+    staminaDrain += 0.4;   // Sprinting/carrying drains more
+  } else if (currentAction.actionType === "offerSupport") {
+    staminaDrain += 0.3;   // Moving to support position
+  }
+  
+  // Apply drain
+  player.stamina.current = Math.max(0, player.stamina.current - staminaDrain);
+  
+  // Recovery (only when stamina is below 80% and not actively moving)
+  if (player.stamina.current < 80 && 
+      currentAction.actionType === "hold_zone") {
+    player.stamina.current = Math.min(
+      100,
+      player.stamina.current + 0.1  // Slow recovery
+    );
+  }
+  
+  // Update fatigue level
+  updateFatigueLevel(player);
+}
+
+// Fatigue level thresholds
+function updateFatigueLevel(player: Player): void {
+  const staminaPercent = (player.stamina.current / player.stamina.max) * 100;
+  
+  if (staminaPercent > 70) {
+    player.stamina.fatigueLevel = "fresh";
+  } else if (staminaPercent > 50) {
+    player.stamina.fatigueLevel = "normal";
+  } else if (staminaPercent > 30) {
+    player.stamina.fatigueLevel = "tired";
+  } else {
+    player.stamina.fatigueLevel = "exhausted";
+  }
+}
+```
+
+**Effect 1: Reaction Delay**:
+
+```typescript
+// Tired players take longer to execute decisions
+
+interface ReactionDelayEffect {
+  fresh: number;       // 0 frames delay (instant)
+  normal: number;      // 2 frames delay (~33ms)
+  tired: number;       // 5 frames delay (~83ms)
+  exhausted: number;   // 10 frames delay (~167ms)
+}
+
+const reactionDelays: ReactionDelayEffect = {
+  fresh: 0,
+  normal: 2,
+  tired: 5,
+  exhausted: 10,
+};
+
+// Apply delay to player action execution
+function executePlayerAction(
+  player: Player,
+  action: PlayerAction,
+  gameState: GameState
+): void {
+  
+  const reactionDelay = reactionDelays[player.stamina.fatigueLevel];
+  
+  // Queue the action for execution after delay
+  player.actionQueue.push({
+    action: action,
+    executeAtFrame: gameState.frameNumber + reactionDelay,
+  });
+}
+
+// Example: Fresh CM passes immediately (frame 100)
+//          Exhausted CM passes 10 frames later (frame 110)
+//          → Opponent has 10 frames to intercept = ~167ms = realistic!
+```
+
+**Effect 2: Max Acceleration**:
+
+```typescript
+// Tired players can't reach top speed as quickly
+
+interface MaxAccelerationEffect {
+  fresh: number;       // 100% of max acceleration (5.0 m/s²)
+  normal: number;      // 90% of max (4.5 m/s²)
+  tired: number;       // 70% of max (3.5 m/s²)
+  exhausted: number;   // 50% of max (2.5 m/s²)
+}
+
+const maxAccelerationMultipliers: MaxAccelerationEffect = {
+  fresh: 1.0,
+  normal: 0.9,
+  tired: 0.7,
+  exhausted: 0.5,
+};
+
+// Apply to physics simulation
+function calculatePlayerAcceleration(
+  player: Player,
+  desiredDirection: Vector3,
+  gameState: GameState
+): Vector3 {
+  
+  const baseAcceleration = 5.0;  // m/s²
+  const fatigueMultiplier = maxAccelerationMultipliers[player.stamina.fatigueLevel];
+  
+  const actualAcceleration = baseAcceleration * fatigueMultiplier;
+  
+  return desiredDirection.normalize().multiply(actualAcceleration);
+}
+
+// Example: Fresh striker accelerates 5 m/s² (reaches 10 m/s in 2s)
+//          Exhausted striker accelerates 2.5 m/s² (reaches 10 m/s in 4s)
+//          → Exhausted defender has time to react and intercept
+```
+
+**Effect 3: Pressing Eligibility**:
+
+```typescript
+// Tired players can't respond to all pressing triggers
+
+interface PressingEligibility {
+  fresh: string[];      // Can respond to all triggers
+  normal: string[];     // Can respond to most triggers
+  tired: string[];      // Limited triggers
+  exhausted: string[];  // Minimal triggers
+}
+
+const pressingEligibility: PressingEligibility = {
+  fresh: ["bad_touch", "back_to_goal", "sideline_trap", "numerical_advantage"],
+  normal: ["bad_touch", "back_to_goal", "sideline_trap"],        // Skip numerical
+  tired: ["sideline_trap"],                                        // Only trap
+  exhausted: [],                                                   // Can't press
+};
+
+// Apply in pressing system
+function findValidPressers(
+  team: Team,
+  targetOpponent: Player,
+  radius: number,
+  priority: number,
+  triggerType: string  // ← Add trigger type parameter
+): Player[] {
+  
+  const valid: Player[] = [];
+  
+  for (const player of team.players) {
+    // Check stamina eligibility for this trigger
+    const eligibleTriggers = pressingEligibility[player.stamina.fatigueLevel];
+    if (!eligibleTriggers.includes(triggerType)) {
+      continue;  // Player too tired to respond to this trigger
+    }
+    
+    // ... rest of validity checks (distance, position, priority)
+    
+    valid.push(player);
+  }
+  
+  return valid;
+}
+
+// Example: Exhausted player can respond to sideline trap (desperate situation)
+//          but can't respond to "bad first touch" (requires active pressing)
+//          → Rewards tactics: tire out opponents, then exploit with pressing triggers
+```
+
+**Integration with Behavior Trees**:
+
+```typescript
+// Stamina affects how player behavior tree is evaluated
+
+function evaluatePlayerBehavior(
+  player: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics,
+  pressingSignals: PressSignal[]
+): PlayerAction {
+  
+  // If exhausted, simplify behavior tree (less aggressive options)
+  if (player.stamina.fatigueLevel === "exhausted") {
+    return evaluateSimplifiedBehaviorTree(player, gameState, teamTactics);
+  }
+  
+  // If tired, reduce risky options (no long sprints)
+  if (player.stamina.fatigueLevel === "tired") {
+    return evaluateConservativeBehaviorTree(player, gameState, teamTactics);
+  }
+  
+  // Normal/fresh: full behavior tree options
+  return evaluateFullBehaviorTree(player, gameState, teamTactics);
+}
+
+// Simplified tree for exhausted players (recovery focus)
+function evaluateSimplifiedBehaviorTree(
+  player: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics
+): PlayerAction {
+  
+  if (gameState.possession === "us") {
+    // Exhausted: pass to nearest player, don't carry
+    return {
+      actionType: "recycle_possession",  // Safe pass
+      targetPlayer: findNearestTeammate(player),
+      priority: 50,
+    };
+  } else {
+    // Exhausted: hold zone, don't press
+    return {
+      actionType: "hold_zone",
+      targetPosition: player.formationAnchor,
+      priority: 30,
+    };
+  }
+}
+
+// Conservative tree for tired players (avoid risky options)
+function evaluateConservativeBehaviorTree(
+  player: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics
+): PlayerAction {
+  
+  if (gameState.possession === "us") {
+    if (hasPassingLane(player, gameState)) {
+      return {
+        actionType: "offerSupport",  // Move, but don't sprint
+        targetPosition: bestSupportPosition(player, gameState),
+        priority: 80,
+      };
+    } else {
+      return {
+        actionType: "hold_ball",     // Keep the ball, don't risk
+        targetPosition: player.position,
+        priority: 50,
+      };
+    }
+  } else {
+    // Tired: mark space, don't chase
+    return {
+      actionType: "cover_gaps",
+      targetPosition: calculateDefensivePosition(player),
+      priority: 60,
+    };
+  }
+}
+```
+
+**Stamina and Match Dynamics**:
+
+```typescript
+// Stamina creates natural match narrative:
+
+// Example progression:
+// 0-20 min: All players fresh, fast-paced game
+// 20-50 min: Stamina spreads unevenly (depends on tactics used)
+//   - High pressing team: midfield tired, pressing triggers less effective
+//   - Defensive team: defenders still fresh, harder to break down
+// 50-70 min: Stamina differential evident
+//   - Tired players have reaction delay → risky passes get intercepted
+//   - Acceleration drop → dribbles slower, easier to defend
+//   - Pressing collapse → best time to attack
+// 70-90 min: Endurance matters
+//   - Super-subs with fresh stamina > tired starters
+//   - Single defender with fresh stamina worth 2 tired defenders
+//   - Set pieces become critical (no sprinting required)
+
+// Post-match analysis shows stamina progression:
+// "Why did we concede at 78 minutes?"
+// → "Your midfield was exhausted (stamina 25%), couldn't press triggers"
+// → "Spend 50k on better conditioning or use rotation"
+```
+
+**Why This Works**:
+
+1. ✅ **Fair**: No stat reduction (no "unfair" luck-based failures)
+2. ✅ **Visible**: Player sees reaction delay and slow acceleration (understands why they failed)
+3. ✅ **Tactical**: Rotation, conditioning, pacing matter
+4. ✅ **Matches Real Football**: Tired players CAN still tackle/pass, just slower
+5. ✅ **Deterministic**: Delays and multipliers are fixed, not random
+6. ✅ **Legible**: All stamina effects logged and analyzable
+
+### 2.1.8 Design Philosophy: What Makes This Feel Like Konami
+
+Before defining the per-frame layers, it's critical to articulate what separates **intentional football** from **chaos that looks footballish**. The Layer 1 systems (Formation, Pressing, Stamina) embody four core principles inspired by Konami's football design philosophy (PES/eFootball):
+
+#### Shape Over Chaos
+
+**Konami Principle**: Teams have a coherent spatial shape that's *visible* and *predictable*, not random clusters of players chasing the ball.
+
+**Our Implementation**:
+- Formation anchors create a **spatial blueprint** (Layer 1 → Formation System)
+- Anchors shift smoothly (not teleport), maintaining shape integrity
+- Unit shapes compress/expand based on **logical triggers**, not randomness
+- Visual result: You can watch a team's formation and predict where defenders will be
+
+**Example**: 
+```
+4-2-3-1 formation with moderate pressing:
+- CB pair maintains ~30m depth (you can see the defensive line)
+- DM pivot stays ~10m ahead of CBs (predictable covering area)
+- Midfield stretches/compresses as a block, not individual players scattering
+
+vs. Chaos:
+- Every player independently chases the ball
+- No formation visible → no tactical identity
+- Player positions unpredictable → feels random
+```
+
+#### Zones Over Randomness
+
+**Konami Principle**: Decisions are based on **discrete game state** (zones, positions, triggers), not probability rolls that sometimes succeed and sometimes fail.
+
+**Our Implementation**:
+- Pressing triggered by **concrete conditions** (bad touch, back to goal, sideline position)
+- Formation adjustment based on **ball location** (which zone is it in?)
+- Pressing eligibility based on **stamina state** (fresh/normal/tired/exhausted)
+- No hidden "70% chance to intercept" → interceptions happen because of **positioning and timing**
+
+**Example**:
+```
+Konami Way (Ours):
+"Ball is in zone 14 AND winger is isolated → fullback overlaps"
+"Opponent has bad first touch (quality < 40) → trigger press (radius 15m)"
+Outcome: Overlap happens. Press responds. Visible, understandable.
+
+Chaos Way:
+"Random (0–100) < pressingChance → maybe press, maybe don't"
+Outcome: Sometimes opponent is pressed, sometimes not. Feels unfair/lucky.
+```
+
+#### Intent Over Animation Spam
+
+**Konami Principle**: Player **decisions drive animations**, not the other way around. One decision = one meaningful action, not a cascade of micro-animations with unclear purpose.
+
+**Our Implementation**:
+- Player behavior trees output **intent** (action type + target) not micro-movements
+- Animations are selected to match intent, not interrupt/override intent
+- Stamina affects **timing** (reaction delay), not animation quality
+- Pressing players move toward a **position** (sideline trap), not just "press animation"
+
+**Example**:
+```
+Konami Way (Ours):
+1. CM decides "offer support" → move to anchor + 3m forward
+2. Engine selects "support_run" animation
+3. Player accelerates toward that position
+One decision, one animation, one outcome.
+
+Chaos Way:
+1. CM triggers 3–4 small animations (turn, step, acceleration)
+2. Camera cuts interrupt view
+3. By the time animations finish, ball has moved (decisions are stale)
+Purpose unclear, outcome looks scripted.
+```
+
+#### Football Logic Before Spectacle
+
+**Konami Principle**: **Tactical cause-and-effect** is the core appeal, not spectacular dribbles or lucky bounces.
+
+**Our Implementation**:
+- High pressing costs stamina (tire out the team)
+- Good positioning creates pressing opportunities
+- Fatigue creates predictable weaknesses (slow reactions, low acceleration)
+- Formation anchors mean "tight defense" is actually tight (no magic blocks)
+- Ball physics match player action intensity (hard kick = risky long ball)
+
+**Example**:
+```
+Konami Narrative:
+"I pressed hard for 40 minutes. Their midfield is exhausted (stamina 30%).
+At 65', I attacked down the wing. My winger was fresh, theirs was tired.
+Their tired defender couldn't accelerate fast enough → I got past him.
+Scored. Tactical victory."
+
+vs. Spectacle Narrative:
+"I pressed. RNG gave me a 70% interception chance. I got lucky.
+Then I did a flashy dribble animation (that breaks physics).
+Somehow scored despite 3 defenders nearby.
+Lucky, not smart."
+```
+
+#### How Layer 1 Embodies These Principles
+
+| Principle | Implementation | Result |
+|-----------|----------------|--------|
+| **Shape** | Formation anchors + unit compression | Coherent, visible team shape |
+| **Zones** | Pressing triggers, stamina states, ball zones | Deterministic, understandable decisions |
+| **Intent** | Behavior trees → actions, stamina → timing | Clear cause-effect, no animation spam |
+| **Logic** | Fatigue, positioning, physics match tactics | Tactical skill > luck |
+
+---
+
 ### 2.2 Layer 2: Unit Shape Logic (Dynamic Adjustments)
 
 **Purpose**: Frame-by-frame decisions (pass/shoot/move) constrained by Layer 1.
