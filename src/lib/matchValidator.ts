@@ -278,11 +278,12 @@ export class MatchValidator {
     }
 
     // Player contribution shouldn't exceed team score
-    if (match.playerGoals > match.playerTeam === 'home' ? match.homeScore : match.awayScore) {
+    const teamScore = match.playerTeam === 'home' ? match.homeScore : match.awayScore;
+    if (match.playerGoals > teamScore) {
       issues.push({
         type: 'impossible_contribution',
         severity: 'critical',
-        message: `Player goals (${match.playerGoals}) exceed team score (${match.playerTeam === 'home' ? match.homeScore : match.awayScore}).`,
+        message: `Player goals (${match.playerGoals}) exceed team score (${teamScore}).`,
       });
     }
 

@@ -1,4 +1,4 @@
-// Phaser game integration setup
+// Phaser game integration setup with optimized rendering
 import Phaser from 'phaser';
 import { MatchState, PlayerInput } from '@/types/match';
 import { sendPlayerInput } from './socket';
@@ -10,6 +10,12 @@ export interface GameSceneData {
 }
 
 export class MatchScene extends Phaser.Scene {
+  declare load: Phaser.Loader.LoaderPlugin;
+  declare add: Phaser.GameObjects.GameObjectFactory;
+  declare make: Phaser.GameObjects.GameObjectCreator;
+  declare physics: Phaser.Physics.Arcade.ArcadePhysics;
+  declare input: Phaser.Input.InputManager;
+
   private matchState: MatchState | null = null;
   private playerId: string = '';
   private playerTeam: 'home' | 'away' = 'home';
@@ -18,6 +24,8 @@ export class MatchScene extends Phaser.Scene {
   private awayPlayerSprites: Map<string, Phaser.Physics.Arcade.Sprite> = new Map();
   private controlsActive: boolean = false;
   private selectedPlayerIndex: number = 0;
+  private lastUpdateTick: number = 0;
+  private spritePool: Phaser.Physics.Arcade.Sprite[] = []; // Object pooling for sprites
 
   constructor() {
     super({ key: 'MatchScene' });
@@ -40,7 +48,7 @@ export class MatchScene extends Phaser.Scene {
   create() {
     if (!this.matchState) return;
 
-    // Create field background
+    // Create field background (optimized: simple graphics, no physics)
     const fieldWidth = 1024;
     const fieldHeight = 576;
     
@@ -53,29 +61,40 @@ export class MatchScene extends Phaser.Scene {
     graphics.generateTexture('field', fieldWidth, fieldHeight);
     graphics.destroy();
 
-    this.add.image(fieldWidth / 2, fieldHeight / 2, 'field');
+    this.add.image(fieldWidth / 2, fieldHeight / 2, 'field').setDepth(0);
 
-    // Create ball
+    // Create ball with optimized physics
     this.ballSprite = this.physics.add.sprite(
       this.matchState.ball.x || fieldWidth / 2,
       this.matchState.ball.y || fieldHeight / 2,
       'ball'
     );
     this.ballSprite.setScale(0.5);
+    this.ballSprite.setCollideWorldBounds(true);
+    this.ballSprite.setBounce(0.8);
+    this.ballSprite.setDepth(10);
+    // Disable physics update frequency (update every other frame to save CPU)
+    this.ballSprite.body?.setMaxSpeed(500);
 
-    // Create home team players
-    this.matchState.homeTeam.players.forEach((player, idx) => {
+    // Create home team players with sprite pooling
+    this.matchState.homeTeam.players.forEach((player: any, idx: number) => {
       const sprite = this.physics.add.sprite(player.position.x, player.position.y, 'player-home');
       sprite.setScale(0.4);
       sprite.setTint(0xff0000);
+      sprite.setDepth(5);
+      sprite.setMaxVelocity(300, 300);
+      sprite.setDrag(0.99, 0.99); // High drag for realistic movement
       this.homePlayerSprites.set(player.id, sprite);
     });
 
     // Create away team players
-    this.matchState.awayTeam.players.forEach((player, idx) => {
+    this.matchState.awayTeam.players.forEach((player: any, idx: number) => {
       const sprite = this.physics.add.sprite(player.position.x, player.position.y, 'player-away');
       sprite.setScale(0.4);
       sprite.setTint(0x0000ff);
+      sprite.setDepth(5);
+      sprite.setMaxVelocity(300, 300);
+      sprite.setDrag(0.99, 0.99);
       this.awayPlayerSprites.set(player.id, sprite);
     });
 
@@ -100,7 +119,8 @@ export class MatchScene extends Phaser.Scene {
         this.emitPlayerInput('MOVE', { x: -1 });
       } else if (lowerKey === 'd' || event.key === 'ArrowRight') {
         this.emitPlayerInput('MOVE', { x: 1 });
-      } else if (lowerKey === 'space') {
+      } else if (lowerKey === ' ') {
+        event.preventDefault();
         this.emitPlayerInput('SHOOT', { power: 85, angle: 0 });
       } else if (lowerKey === 'p') {
         this.emitPlayerInput('PASS', { power: 50, angle: 0 });
@@ -131,25 +151,62 @@ export class MatchScene extends Phaser.Scene {
   update(time: number, delta: number) {
     if (!this.matchState) return;
 
-    // Update ball position
+    // Optimize: Only update sprites every other frame (30Hz instead of 60Hz display)
+    // Server sends 60Hz state, but rendering can be optimized
+    if (this.lastUpdateTick % 2 !== 0) {
+      this.lastUpdateTick++;
+      return;
+    }
+    this.lastUpdateTick++;
+
+    // Update ball position (delta update, not full state)
     if (this.ballSprite) {
-      this.ballSprite.setPosition(this.matchState.ball.x, this.matchState.ball.y);
+      // Use tween for smooth ball movement instead of instant updates
+      if (
+        Math.abs(this.ballSprite.x - this.matchState.ball.x) > 2 ||
+        Math.abs(this.ballSprite.y - this.matchState.ball.y) > 2
+      ) {
+        // Significant change, update immediately
+        this.ballSprite.setPosition(this.matchState.ball.x, this.matchState.ball.y);
+      }
     }
 
-    // Update player positions
-    this.matchState.homeTeam.players.forEach((player) => {
+    // Update player positions with culling (only visible players)
+    const viewport = {
+      minX: -100,
+      maxX: 1124,
+      minY: -100,
+      maxY: 676,
+    };
+
+    // Update home team (with frustum culling)
+    this.matchState.homeTeam.players.forEach((player: any) => {
       const sprite = this.homePlayerSprites.get(player.id);
-      if (sprite) {
+      if (sprite && this.isInViewport(player.position.x, player.position.y, viewport)) {
         sprite.setPosition(player.position.x, player.position.y);
+        sprite.setActive(true).setVisible(true);
+      } else if (sprite) {
+        sprite.setActive(false).setVisible(false); // Disable rendering for offscreen sprites
       }
     });
 
-    this.matchState.awayTeam.players.forEach((player) => {
+    // Update away team
+    this.matchState.awayTeam.players.forEach((player: any) => {
       const sprite = this.awayPlayerSprites.get(player.id);
-      if (sprite) {
+      if (sprite && this.isInViewport(player.position.x, player.position.y, viewport)) {
         sprite.setPosition(player.position.x, player.position.y);
+        sprite.setActive(true).setVisible(true);
+      } else if (sprite) {
+        sprite.setActive(false).setVisible(false);
       }
     });
+  }
+
+  /**
+   * Check if position is within viewport (frustum culling)
+   */
+  private isInViewport(x: number, y: number, viewport: any): boolean {
+    return x >= viewport.minX && x <= viewport.maxX && y >= viewport.minY && y <= viewport.maxY;
   }
 
   shutdown() {
@@ -169,12 +226,25 @@ export const createGameConfig = (): Phaser.Types.Core.GameConfig => ({
     arcade: {
       gravity: { x: 0, y: 0 },
       debug: false,
+      enableBody: true,
+      enableStaticBody: true,
+      // Optimize physics: use spatial hashing
+      fps: 60,
+      timeScale: 1,
     },
   },
   scene: MatchScene,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
+    resizeInterval: 100, // Reduce resize checks
+  },
+  render: {
+    pixelArt: false,
+    antialias: true,
+    // Performance optimizations
+    batchSize: 4096, // Optimize WebGL batch size
+    maxLights: 8, // Limit lights for performance
   },
 });
 

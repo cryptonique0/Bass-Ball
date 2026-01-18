@@ -2,6 +2,12 @@
 import { io, Socket } from 'socket.io-client';
 import { MatchState, PlayerInput, MatchResult } from '@/types/match';
 import { useMatchStore } from '@/store/useMatchStore';
+import {
+  createDeltaUpdate,
+  resetDeltaState,
+  queueInputConfirmation,
+  flushInputBatch,
+} from './networkOptimization';
 
 let socket: Socket | null = null;
 const inputRateLimit = new Map<string, number[]>(); // Track input timestamps for rate limiting
@@ -188,6 +194,7 @@ export const initializeSocket = (playerId: string, username: string) => {
   // Match events
   socket.on('match:start', (matchState: MatchState) => {
     console.log('Match started:', matchState.matchId);
+    resetDeltaState(); // Reset delta tracking for new match
     useMatchStore.setState({
       currentMatch: matchState,
       isMatchStarted: true,
@@ -198,12 +205,56 @@ export const initializeSocket = (playerId: string, username: string) => {
   socket.on('match:state', (state: Partial<MatchState>) => {
     const store = useMatchStore.getState();
     if (store.currentMatch) {
+      const updatedMatch = {
+        ...store.currentMatch,
+        ...state,
+      };
       useMatchStore.setState({
-        currentMatch: {
-          ...store.currentMatch,
-          ...state,
-        },
+        currentMatch: updatedMatch,
       });
+    }
+  });
+
+  // Delta updates: More efficient state synchronization
+  socket.on('match:delta', (delta: any) => {
+    const store = useMatchStore.getState();
+    if (store.currentMatch) {
+      const updatedMatch = { ...store.currentMatch };
+
+      // Apply delta changes
+      if (delta.ball) {
+        updatedMatch.ball = { ...updatedMatch.ball, ...delta.ball };
+      }
+      if (delta.homeScore !== undefined) updatedMatch.homeScore = delta.homeScore;
+      if (delta.awayScore !== undefined) updatedMatch.awayScore = delta.awayScore;
+      if (delta.possession !== undefined) {
+        updatedMatch.possession = delta.possession
+          ? {
+              id: delta.possession,
+              team: updatedMatch.homeTeam.players.some((p: any) => p.id === delta.possession)
+                ? 'home'
+                : 'away',
+            }
+          : null;
+      }
+
+      // Apply player updates
+      if (delta.playerUpdates) {
+        delta.playerUpdates.forEach((update: any) => {
+          const homePlayer = updatedMatch.homeTeam.players.find((p: any) => p.id === update.id);
+          const awayPlayer = updatedMatch.awayTeam.players.find((p: any) => p.id === update.id);
+          const player = homePlayer || awayPlayer;
+
+          if (player) {
+            if (update.x !== undefined) player.position.x = update.x;
+            if (update.y !== undefined) player.position.y = update.y;
+            if (update.stamina !== undefined) player.stamina = update.stamina;
+            if (update.status !== undefined) player.status = update.status;
+          }
+        });
+      }
+
+      useMatchStore.setState({ currentMatch: updatedMatch });
     }
   });
 
