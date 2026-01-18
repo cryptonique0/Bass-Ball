@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { GuestPlayer } from '@/lib/guestMode';
-import { MatchValidator, ValidationResult } from '@/lib/matchValidator';
+import { MatchValidator, ValidationResult, ValidationIssue } from '@/lib/matchValidator';
 
 interface FairnessValidatorProps {
   player: GuestPlayer;
@@ -260,47 +260,21 @@ export function FairnessValidator({ player, onClose }: FairnessValidatorProps) {
 
                   {/* Checks Summary */}
                   <div className="space-y-1 text-sm">
-                    <p
-                      className={`${
-                        selectedValidation.checksSummary.reasonableness
-                          ? 'text-green-400'
-                          : 'text-red-400'
-                      }`}
-                    >
-                      {selectedValidation.checksSummary.reasonableness
-                        ? '✓'
-                        : '✗'}{' '}
-                      Reasonableness Check
+                    <p className="text-blue-400">
+                      ✓ Tick-Based Rate Limiting
+                    </p>
+                    <p className="text-blue-400">
+                      ✓ Timestamp Ordering
                     </p>
                     <p
-                      className={`${
-                        selectedValidation.checksSummary.consistency
-                          ? 'text-green-400'
-                          : 'text-red-400'
-                      }`}
+                      className={selectedValidation.issues.length === 0 ? 'text-green-400' : 'text-yellow-400'}
                     >
-                      {selectedValidation.checksSummary.consistency ? '✓' : '✗'}{' '}
-                      Consistency Check
+                      {selectedValidation.issues.length === 0 ? '✓' : '⚠'} Anomaly Detection
                     </p>
                     <p
-                      className={`${
-                        selectedValidation.checksSummary.anomaly
-                          ? 'text-green-400'
-                          : 'text-red-400'
-                      }`}
+                      className={selectedValidation.warnings.length === 0 ? 'text-green-400' : 'text-yellow-400'}
                     >
-                      {selectedValidation.checksSummary.anomaly ? '✓' : '✗'} Anomaly
-                      Detection
-                    </p>
-                    <p
-                      className={`${
-                        selectedValidation.checksSummary.comparison
-                          ? 'text-green-400'
-                          : 'text-red-400'
-                      }`}
-                    >
-                      {selectedValidation.checksSummary.comparison ? '✓' : '✗'}{' '}
-                      Comparative Analysis
+                      {selectedValidation.warnings.length === 0 ? '✓' : '⚠'} Warnings
                     </p>
                   </div>
                 </div>

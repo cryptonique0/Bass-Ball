@@ -1,5 +1,24 @@
 // Match validation and fairness analysis system
-import { GuestMatch } from './guestMode';
+
+export interface GuestMatch {
+  matchId: string;
+  timestamp: number;
+  duration: number; // Minutes
+  homeTeam: string;
+  homeScore: number;
+  awayTeam: string;
+  awayScore: number;
+  playerTeam: 'home' | 'away';
+  playerGoals: number;
+  playerAssists: number;
+  result: 'win' | 'loss' | 'draw';
+  inputs: Array<{
+    tick: number;
+    timestamp: number;
+    action: string;
+    [key: string]: any;
+  }>;
+}
 
 export interface ValidationIssue {
   type: string;
