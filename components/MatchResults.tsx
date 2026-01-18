@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { MatchStats, MatchEvent } from '@/lib/matchEngine';
+import { MatchStats } from '@/lib/matchEngine';
 
 interface MatchResultsProps {
   homeTeamName: string;
@@ -36,7 +36,7 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
     const homeStats = new Map<string, PlayerStats>();
     const awayStats = new Map<string, PlayerStats>();
 
-    matchStats.events.forEach((event) => {
+    matchStats.events.forEach((event: any) => {
       const statsMap = event.team === 'home' ? homeStats : awayStats;
       if (!statsMap.has(event.player)) {
         statsMap.set(event.player, { name: event.player, goals: 0, assists: 0, shots: 0, passes: 0, tackles: 0 });
@@ -50,7 +50,7 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
     });
 
     // Track assists separately
-    matchStats.events.forEach((event) => {
+    matchStats.events.forEach((event: any) => {
       if (event.type === 'goal' && event.description.includes('(Assist:')) {
         const assistMatch = event.description.match(/\(Assist: (.+?)\)/);
         if (assistMatch) {
@@ -74,7 +74,8 @@ export const MatchResults: React.FC<MatchResultsProps> = ({
 
   // Find MVP (most goals, then assists, then overall impact)
   const getAllPlayers = () => [...playerStats.home.map(p => ({...p, team: 'home'})), ...playerStats.away.map(p => ({...p, team: 'away'}))];
-  const mvp = getAllPlayers.sort((a, b) => {
+  const allPlayers = getAllPlayers();
+  const mvp = allPlayers.sort((a: any, b: any) => {
     if (b.goals !== a.goals) return b.goals - a.goals;
     if (b.assists !== a.assists) return b.assists - a.assists;
     return (b.shots + b.passes + b.tackles) - (a.shots + a.passes + a.tackles);
