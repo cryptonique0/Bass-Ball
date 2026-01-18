@@ -20,10 +20,115 @@ export interface ValidationResult {
     consistency: boolean;
     anomaly: boolean;
     comparison: boolean;
+    tickBased: boolean;
   };
 }
 
+/**
+ * Tick-based rate limiting rules
+ * Prevents automated input spam and cheating
+ */
+interface TickBucket {
+  inputs: number; // Count of inputs in this tick window
+  maxAllowed: number; // Maximum inputs allowed
+}
+
 export class MatchValidator {
+  /**
+   * Validate tick-based input rate limiting
+   * Enforces max 5 inputs per 12-tick window (60Hz / 5 = 12 ticks per second)
+   */
+  static validateTickBasedRates(inputs: any[]): { valid: boolean; issues: ValidationIssue[] } {
+    const issues: ValidationIssue[] = [];
+    const tickBuckets = new Map<number, number>(); // tickBucket -> input count
+    const tickBucketSize = 12; // 12 ticks = 200ms at 60Hz
+    const maxInputsPerBucket = 5;
+
+    for (const input of inputs) {
+      const bucket = Math.floor(input.tick / tickBucketSize);
+      const count = (tickBuckets.get(bucket) || 0) + 1;
+      tickBuckets.set(bucket, count);
+
+      if (count > maxInputsPerBucket) {
+        issues.push({
+          type: 'TICK_RATE_LIMIT_VIOLATED',
+          severity: 'high',
+          message: `Tick bucket ${bucket}: ${count} inputs (max ${maxInputsPerBucket})`,
+          threshold: maxInputsPerBucket,
+          actual: count,
+        });
+      }
+    }
+
+    return {
+      valid: issues.length === 0,
+      issues,
+    };
+  }
+
+  /**
+   * Validate tick monotonicity
+   * Ensures ticks always increase, never decrease
+   */
+  static validateTickMonotonicity(inputs: any[]): { valid: boolean; issues: ValidationIssue[] } {
+    const issues: ValidationIssue[] = [];
+    let lastTick = -1;
+
+    for (const input of inputs) {
+      if (input.tick <= lastTick) {
+        issues.push({
+          type: 'TICK_NOT_MONOTONIC',
+          severity: 'critical',
+          message: `Tick ${input.tick} is not greater than previous tick ${lastTick}`,
+        });
+      }
+      lastTick = input.tick;
+    }
+
+    return {
+      valid: issues.length === 0,
+      issues,
+    };
+  }
+
+  /**
+   * Validate input timestamp ordering
+   * Ensures timestamps are monotonically increasing and reasonable
+   */
+  static validateTimestampOrdering(inputs: any[]): { valid: boolean; issues: ValidationIssue[] } {
+    const issues: ValidationIssue[] = [];
+    let lastTimestamp = 0;
+    const now = Date.now();
+
+    for (const input of inputs) {
+      // Check monotonicity
+      if (input.timestamp <= lastTimestamp) {
+        issues.push({
+          type: 'TIMESTAMP_NOT_MONOTONIC',
+          severity: 'high',
+          message: `Timestamp ${input.timestamp} is not greater than previous ${lastTimestamp}`,
+        });
+      }
+
+      // Check if timestamp is in reasonable range (within match duration)
+      if (input.timestamp < now - 1900000) {
+        // More than 30min ago
+        issues.push({
+          type: 'TIMESTAMP_ANOMALY',
+          severity: 'medium',
+          message: `Input timestamp is suspiciously old`,
+        });
+      }
+
+      lastTimestamp = input.timestamp;
+    }
+
+    return {
+      valid: issues.length === 0,
+      issues,
+    };
+  }
+
   /**
    * Validate a single match for suspicious patterns
    */
@@ -39,9 +144,42 @@ export class MatchValidator {
       consistency: true,
       anomaly: true,
       comparison: true,
+      tickBased: true,
     };
 
-    // Check 1: Reasonableness (are the stats plausible?)
+    // Check 1: Tick-based rate limiting
+    const tickRateCheck = this.validateTickBasedRates(match.inputs);
+    if (!tickRateCheck.valid) {
+      tickRateCheck.issues.forEach(issue => {
+        if (issue.severity === 'critical' || issue.severity === 'high') {
+          issues.push(issue);
+        } else {
+          warnings.push(issue);
+        }
+      });
+      checks.tickBased = false;
+    }
+
+    // Check 2: Tick monotonicity
+    const tickMonotonicCheck = this.validateTickMonotonicity(match.inputs);
+    if (!tickMonotonicCheck.valid) {
+      tickMonotonicCheck.issues.forEach(issue => issues.push(issue));
+      checks.tickBased = false;
+    }
+
+    // Check 3: Timestamp ordering
+    const timestampCheck = this.validateTimestampOrdering(match.inputs);
+    if (!timestampCheck.valid) {
+      timestampCheck.issues.forEach(issue => {
+        if (issue.severity === 'critical' || issue.severity === 'high') {
+          issues.push(issue);
+        } else {
+          warnings.push(issue);
+        }
+      });
+    }
+
+    // Check 4: Reasonableness (are the stats plausible?)
     const reasonCheck = this.checkReasonableness(match);
     if (!reasonCheck.valid) {
       reasonCheck.issues.forEach(issue => {
@@ -54,7 +192,7 @@ export class MatchValidator {
       checks.reasonableness = false;
     }
 
-    // Check 2: Consistency (do stats match game duration?)
+    // Check 5: Consistency (do stats match game duration?)
     const consistencyCheck = this.checkConsistency(match);
     if (!consistencyCheck.valid) {
       consistencyCheck.issues.forEach(issue => {
@@ -67,7 +205,7 @@ export class MatchValidator {
       checks.consistency = false;
     }
 
-    // Check 3: Anomaly detection (is this player's performance unusual?)
+    // Check 6: Anomaly detection (is this player's performance unusual?)
     if (matchHistory && matchHistory.length > 0) {
       const anomalyCheck = this.checkAnomalies(match, matchHistory);
       if (anomalyCheck.detected) {
@@ -82,7 +220,7 @@ export class MatchValidator {
       }
     }
 
-    // Check 4: Comparative analysis (vs player's average)
+    // Check 7: Comparative analysis (vs player's average)
     if (matchHistory && matchHistory.length >= 5) {
       const comparisonCheck = this.checkComparison(match, matchHistory);
       if (!comparisonCheck.valid) {

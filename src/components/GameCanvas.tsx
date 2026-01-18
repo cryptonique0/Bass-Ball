@@ -47,14 +47,17 @@ export const GameCanvas: React.FC<{ matchId: string }> = ({ matchId }) => {
       },
     });
 
-    // Handle window resize
+    // Handle window resize with mobile optimization
     const handleResize = () => {
       if (gameRef.current) {
-        gameRef.current.scale.resize(window.innerWidth, window.innerHeight * 0.7);
+        const isMobile = window.innerWidth < 768;
+        const height = isMobile ? window.innerHeight - 280 : window.innerHeight - 200;
+        gameRef.current.scale.resize(window.innerWidth, Math.max(300, height));
       }
     };
 
     window.addEventListener('resize', handleResize);
+    handleResize(); // Initial size calculation
 
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -69,10 +72,10 @@ export const GameCanvas: React.FC<{ matchId: string }> = ({ matchId }) => {
     <div
       ref={containerRef}
       id="phaser-container"
-      className="w-full bg-gradient-to-b from-green-800 to-green-900 rounded-lg overflow-hidden shadow-lg"
+      className="w-full transition-all duration-300 ease-out bg-gradient-to-b from-green-800 to-green-900 rounded-none md:rounded-lg overflow-hidden shadow-lg animate-in fade-in"
       style={{
-        height: 'calc(100vh - 200px)',
-        minHeight: '400px',
+        height: 'clamp(300px, calc(100vh - 280px), calc(100vh - 200px))',
+        aspectRatio: '16 / 9',
       }}
     />
   );
