@@ -126,6 +126,7 @@ Without these systems, matches feel arcade. With them, Bass Ball becomes a **rep
 **Skill Mastery Progression System**
 | File | Purpose |
 |------|---------|
+| [docs/SKILL_MASTERY_SYSTEM.md](docs/SKILL_MASTERY_SYSTEM.md) | Role-specific mastery mechanics: 7 archetypes (CB, FB, DM, CM, AM, Winger, ST), 0-100% progression per role, stat-specific formulas, leaderboards per role |
 | [docs/PROGRESSION_SYSTEM.md](docs/PROGRESSION_SYSTEM.md) | Skill-based progression without pay-to-win: 7 role masteries (0-100% per role), 10 playstyle badges earned through repeated skill expression, anti-cheat verification, leaderboard integration |
 
 **Cosmetics Monetization (Zero Stat Impact)**
@@ -136,7 +137,23 @@ Without these systems, matches feel arcade. With them, Bass Ball becomes a **rep
 **Ranked Competitive System**
 | File | Purpose |
 |------|---------|
+| [docs/SEASONS_AND_RANKING.md](docs/SEASONS_AND_RANKING.md) | Seasonal structure (12-week cycles), promotion/relegation tiers, tier-based cosmetic rewards, rating decay & reset mechanics, hall of fame system, top 100 NFT badges |
 | [docs/RANKED_SYSTEM.md](docs/RANKED_SYSTEM.md) | ELO ranking system: 10 tiers (Bronze→Godslayer), placement matches, seasonal resets, anti-smurfing detection, global/tier-specific/role-specific leaderboards |
+
+**Match Day UI/UX (Broadcast-Level Presentation)**
+| File | Purpose |
+|------|---------|
+| [docs/MATCHDAY_UI.md](docs/MATCHDAY_UI.md) | Pre-match lineup screen, tactical board view, player condition indicators (fitness/injury), in-match substitution UI, fatigue/injury alerts, match statistics dashboard, post-match results |
+
+**Replay & Analytics System (Web3 Trustless Verification)**
+| File | Purpose |
+|------|---------|
+| [docs/REPLAY_ANALYTICS_UI.md](docs/REPLAY_ANALYTICS_UI.md) | Deterministic replay viewer, timeline scrubber, event markers/log, player heatmaps (position/pressure/passing), pass maps & networks, shot maps with xG analysis, on-chain proof verification, dispute resolution |
+
+**Input System & Controller UX (Console-Grade Controls)**
+| File | Purpose |
+|------|---------|
+| [docs/INPUT_SYSTEM.md](docs/INPUT_SYSTEM.md) | Gamepad support (PS5/Xbox/Switch), input buffering (100-200ms), latency feedback UI, custom keybind profiles (6 presets + unlimited custom), keyboard mapping, accessibility options (colorblind/high contrast/hold time adjustment) |
 
 **Why This Matters**: Players earn progression through **pure skill expression**:
 - **Skill Mastery**: 7 role-specific progressions (Passing accuracy, Tackle timing, Shot placement under pressure)
