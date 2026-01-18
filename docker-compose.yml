@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - '3000:3000'
+    environment:
+      NEXT_PUBLIC_BASE_CHAIN_ID: '8453'
+      NEXT_PUBLIC_BASE_RPC: 'https://mainnet.base.org'
+      NEXT_PUBLIC_PRIVY_APP_ID: ${PRIVY_APP_ID}
+      NEXT_PUBLIC_WALLETCONNECT_ID: ${WALLETCONNECT_ID}
+    depends_on:
+      - backend
+    networks:
+      - bassball-network
+
+  # Backend (Express + Node.js)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - '3001:3001'
+    environment:
+      DATABASE_URL: postgresql://bassball:password@postgres:5432/bassball
+      REDIS_URL: redis://redis:6379
+      BASE_RPC_URL: 'https://mainnet.base.org'
+      NODE_ENV: production
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - bassball-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: bassball
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bassball
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bassball-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U bassball']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - bassball-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  bassball-network:
+    driver: bridge
