@@ -249,6 +249,38 @@ Visit `http://localhost:3000` to play!
 
 ---
 
+## 🎥 Demo Mode (For Judges & Investors)
+
+**Play Bass Ball in 3 minutes. No wallet. No friction.**
+
+### Quick Demo Flow
+
+1. **Visit Demo**: https://bassball.io/demo
+2. **Join Match**: Click "Play as Guest" → Instant 11v11 match (3 min duration)
+3. **View Replay**: Post-match → Hash verification on Base Sepolia
+4. **Inspect Record**: Click "View On-Chain" → BaseScan match registry entry
+
+### Demo Credentials
+- **Network**: Base Sepolia testnet
+- **Gas**: Sponsored via Paymaster (no cost)
+- **Account**: Disposable guest account (auto-created, no seed phrase)
+- **Cards**: Minted to demo account (not persistent across sessions)
+
+### What You'll See
+- ✅ Real-time 60 FPS match engine
+- ✅ Server-authoritative gameplay (inputs validated)
+- ✅ Replay hash on-chain (verifiable, immutable)
+- ✅ Public verification (anyone can re-simulate)
+- ✅ Zero pay-to-win mechanics (pure skill)
+
+### For Hackathon Judges
+- **No setup required** — instant playable experience
+- **5-minute deep dive** — see auth, gameplay, verification all in one flow
+- **Testnet safety** — demo funds are disposable
+- **Reproducible** — same build for every judge
+
+---
+
 ## 📖 Architecture Overview
 
 ```
@@ -438,7 +470,37 @@ Layer 11: Immutable Record (On-chain hash can't change)
 
 ---
 
-## 🔐 Security & Verification
+## � Scalability & Cost Curve
+
+Unit economics show a clear path to profitability. Monthly infrastructure costs scale linearly with user base:
+
+| DAU | Matches/Day | Est. Monthly Infra Cost | Revenue @ $130k/month | Margin |
+|-----|------------|-------------------------|----------------------|--------|
+| 1k | 5k | ~$6k | $21k | 3.5x coverage |
+| 5k | 25k | ~$18k | $105k | 5.8x coverage |
+| 10k | 50k | ~$35k | $210k | 6x coverage |
+| 50k | 250k | ~$165k | $1.05M | 6.4x coverage |
+
+### Primary Cost Drivers
+- **Paymaster gas sponsorship**: 45-50% of total
+- **Match engine compute**: 30-35% of total
+- **IPFS pinning + storage**: 15-20% of total
+
+### Cost Mitigation Strategies
+- **Sponsored tx caps**: Limit free gasless txs to new players only
+- **Batch result recording**: Bundle 10-20 matches in single on-chain transaction
+- **Replay pruning**: Store only result hash + input delta on-chain; prune old replays from IPFS after 90 days (hash preserved for verification)
+- **Regional CDN**: Distribute IPFS nodes to reduce bandwidth costs
+
+### Breakeven Timeline
+- **Current**: <100 DAU in testing
+- **Target Q2**: 1,000 DAU → $6k/month costs (covered by sponsorships)
+- **Target Q3**: 5,000 DAU → $18k/month costs (covered by tournament fees + sponsorships)
+- **Sustainable**: 10,000+ DAU → Positive unit economics with margin for growth
+
+---
+
+## �🔐 Security & Verification
 
 ### Replay Verification (Trustless)
 
@@ -682,7 +744,38 @@ npm run test:all        # All tests
 
 ---
 
-## 🤝 Contributing
+## � Hard Problems We're Solving Next
+
+Bass Ball's long-term vision requires solving problems that most Web3 games don't even attempt:
+
+### Near-Term (Phase 2-3)
+- **ZK-Proofed Match Execution**: Compress 5400 match ticks into a single ZK proof (eliminates replay storage)
+- **Multi-Validator Match Consensus**: 3+ independent servers re-simulate matches; majority consensus on result (Byzantine fault tolerance)
+- **Trustless Tournament Arbitration**: Smart contracts judge disputes without human intervention
+
+### Medium-Term (Phase 4-5)
+- **Cross-Chain Identity**: Player accounts on Base ↔ Arbitrum ↔ Optimism with unified leaderboard
+- **Anti-Collusion Detection**: Graph analysis to detect win-trading rings; automated penalty system
+- **Sub-Second Finality**: Optimistic rollups for instant match settlement without Base confirmation
+
+### Long-Term (Beyond 2026)
+- **Decentralized Match Hosting**: Players run match nodes; no central server single point of failure
+- **Quantum-Safe Signatures**: Migrate to post-quantum cryptography before threats materialize
+- **AI-Resistant Gameplay**: Design engine features that break common bot patterns
+
+### Why This Approach?
+
+We deliberately ship incrementally to:
+- ✅ Avoid overengineering (each problem solved when needed)
+- ✅ Learn from real players before optimizing infrastructure
+- ✅ Maintain shipping velocity (perfection is the enemy of launch)
+- ✅ Let Web3 stack mature (ZK tooling, optimism rollups, etc.)
+
+**Current focus**: Fair gameplay, deterministic verification, gasless UX. Everything else follows.
+
+---
+
+## �🤝 Contributing
 
 ### Development Setup
 ```bash
