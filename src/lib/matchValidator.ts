@@ -1,0 +1,466 @@
+// Match validation and fairness analysis system
+import { GuestMatch } from './guestMode';
+
+export interface ValidationIssue {
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  message: string;
+  threshold?: number;
+  actual?: number;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  score: number; // 0-100
+  issues: ValidationIssue[];
+  warnings: ValidationIssue[];
+  timestamp: number;
+  checksSummary: {
+    reasonableness: boolean;
+    consistency: boolean;
+    anomaly: boolean;
+    comparison: boolean;
+  };
+}
+
+export class MatchValidator {
+  /**
+   * Validate a single match for suspicious patterns
+   */
+  static validateMatch(
+    match: GuestMatch,
+    playerStats?: any,
+    matchHistory?: GuestMatch[]
+  ): ValidationResult {
+    const issues: ValidationIssue[] = [];
+    const warnings: ValidationIssue[] = [];
+    const checks = {
+      reasonableness: true,
+      consistency: true,
+      anomaly: true,
+      comparison: true,
+    };
+
+    // Check 1: Reasonableness (are the stats plausible?)
+    const reasonCheck = this.checkReasonableness(match);
+    if (!reasonCheck.valid) {
+      reasonCheck.issues.forEach(issue => {
+        if (issue.severity === 'critical' || issue.severity === 'high') {
+          issues.push(issue);
+        } else {
+          warnings.push(issue);
+        }
+      });
+      checks.reasonableness = false;
+    }
+
+    // Check 2: Consistency (do stats match game duration?)
+    const consistencyCheck = this.checkConsistency(match);
+    if (!consistencyCheck.valid) {
+      consistencyCheck.issues.forEach(issue => {
+        if (issue.severity === 'critical' || issue.severity === 'high') {
+          issues.push(issue);
+        } else {
+          warnings.push(issue);
+        }
+      });
+      checks.consistency = false;
+    }
+
+    // Check 3: Anomaly detection (is this player's performance unusual?)
+    if (matchHistory && matchHistory.length > 0) {
+      const anomalyCheck = this.checkAnomalies(match, matchHistory);
+      if (anomalyCheck.detected) {
+        anomalyCheck.issues.forEach(issue => {
+          if (issue.severity === 'critical' || issue.severity === 'high') {
+            issues.push(issue);
+          } else {
+            warnings.push(issue);
+          }
+        });
+        checks.anomaly = false;
+      }
+    }
+
+    // Check 4: Comparative analysis (vs player's average)
+    if (matchHistory && matchHistory.length >= 5) {
+      const comparisonCheck = this.checkComparison(match, matchHistory);
+      if (!comparisonCheck.valid) {
+        comparisonCheck.issues.forEach(issue => {
+          warnings.push(issue);
+        });
+        checks.comparison = false;
+      }
+    }
+
+    // Calculate score
+    const score = this.calculateScore(issues, warnings);
+
+    return {
+      isValid: issues.length === 0,
+      score,
+      issues,
+      warnings,
+      timestamp: Date.now(),
+      checksSummary: checks,
+    };
+  }
+
+  /**
+   * Check if match stats are reasonably achievable in real gameplay
+   */
+  private static checkReasonableness(match: GuestMatch): {
+    valid: boolean;
+    issues: ValidationIssue[];
+  } {
+    const issues: ValidationIssue[] = [];
+
+    // Duration must be between 45-120 minutes (typical football match)
+    if (match.duration < 45 || match.duration > 120) {
+      issues.push({
+        type: 'unrealistic_duration',
+        severity: match.duration < 30 || match.duration > 150 ? 'high' : 'low',
+        message: `Match duration ${match.duration}' is unusual. Typical: 45-120 minutes.`,
+        threshold: 90,
+        actual: match.duration,
+      });
+    }
+
+    // Goals should be reasonable for match duration
+    const maxGoalsPerHalf = Math.ceil(match.duration / 45) * 3; // ~3 goals per 45 min
+    const totalTeamGoals = match.homeScore + match.awayScore;
+    if (totalTeamGoals > maxGoalsPerHalf) {
+      issues.push({
+        type: 'excessive_goals',
+        severity: totalTeamGoals > maxGoalsPerHalf * 2 ? 'high' : 'medium',
+        message: `Total goals ${totalTeamGoals} seems high for ${match.duration}' match.`,
+        threshold: maxGoalsPerHalf,
+        actual: totalTeamGoals,
+      });
+    }
+
+    // Player contribution shouldn't exceed team score
+    if (match.playerGoals > match.playerTeam === 'home' ? match.homeScore : match.awayScore) {
+      issues.push({
+        type: 'impossible_contribution',
+        severity: 'critical',
+        message: `Player goals (${match.playerGoals}) exceed team score (${match.playerTeam === 'home' ? match.homeScore : match.awayScore}).`,
+      });
+    }
+
+    // Assists shouldn't be excessive
+    if (match.playerAssists > 10) {
+      issues.push({
+        type: 'excessive_assists',
+        severity: match.playerAssists > 15 ? 'high' : 'medium',
+        message: `${match.playerAssists} assists seems unrealistic for a ${match.duration}' match.`,
+        threshold: 8,
+        actual: match.playerAssists,
+      });
+    }
+
+    // Ratio check: assists to goals
+    if (match.playerGoals === 0 && match.playerAssists > 5) {
+      issues.push({
+        type: 'unlikely_assists_no_goals',
+        severity: 'medium',
+        message: `${match.playerAssists} assists with 0 goals is statistically unlikely.`,
+      });
+    }
+
+    return {
+      valid: issues.filter(i => i.severity === 'critical' || i.severity === 'high').length === 0,
+      issues,
+    };
+  }
+
+  /**
+   * Check if stats are consistent with match duration and team performance
+   */
+  private static checkConsistency(match: GuestMatch): {
+    valid: boolean;
+    issues: ValidationIssue[];
+  } {
+    const issues: ValidationIssue[] = [];
+
+    // Goals per team per minute
+    const homeGoalsPerMin = match.homeScore / Math.max(match.duration, 1);
+    const awayGoalsPerMin = match.awayScore / Math.max(match.duration, 1);
+
+    // Flag if one team scores 1+ goals per minute (unrealistic)
+    if (homeGoalsPerMin > 0.5) {
+      issues.push({
+        type: 'unrealistic_scoring_pace',
+        severity: 'high',
+        message: `Home team scoring pace (${homeGoalsPerMin.toFixed(2)}/min) is unrealistic.`,
+      });
+    }
+    if (awayGoalsPerMin > 0.5) {
+      issues.push({
+        type: 'unrealistic_scoring_pace',
+        severity: 'high',
+        message: `Away team scoring pace (${awayGoalsPerMin.toFixed(2)}/min) is unrealistic.`,
+      });
+    }
+
+    // Player stats consistency
+    const playerTeamScore = match.playerTeam === 'home' ? match.homeScore : match.awayScore;
+    const playerContribution = match.playerGoals + match.playerAssists;
+    const contributionRatio = playerContribution / Math.max(playerTeamScore, 1);
+
+    // Player should contribute ~30-60% of team goals (not 0%, not 100%)
+    if (playerTeamScore > 0) {
+      if (contributionRatio > 0.9) {
+        issues.push({
+          type: 'excessive_player_contribution',
+          severity: 'medium',
+          message: `Player contributed ${(contributionRatio * 100).toFixed(0)}% of team's goals.`,
+          threshold: 60,
+          actual: Math.round(contributionRatio * 100),
+        });
+      }
+      if (playerContribution === 0 && playerTeamScore > 2) {
+        issues.push({
+          type: 'unlikely_no_contribution',
+          severity: 'low',
+          message: `No goals/assists in a ${playerTeamScore}-goal team victory is unlikely but possible.`,
+        });
+      }
+    }
+
+    return {
+      valid: issues.filter(i => i.severity === 'critical' || i.severity === 'high').length === 0,
+      issues,
+    };
+  }
+
+  /**
+   * Detect anomalies compared to player's match history
+   */
+  private static checkAnomalies(
+    match: GuestMatch,
+    matchHistory: GuestMatch[]
+  ): {
+    detected: boolean;
+    issues: ValidationIssue[];
+  } {
+    const issues: ValidationIssue[] = [];
+
+    if (matchHistory.length === 0) {
+      return { detected: false, issues: [] };
+    }
+
+    // Calculate averages from recent 10 matches
+    const recentMatches = matchHistory.slice(0, 10);
+    const avgGoals =
+      recentMatches.reduce((s, m) => s + m.playerGoals, 0) / recentMatches.length;
+    const avgAssists =
+      recentMatches.reduce((s, m) => s + m.playerAssists, 0) / recentMatches.length;
+    const avgDuration =
+      recentMatches.reduce((s, m) => s + m.duration, 0) / recentMatches.length;
+
+    // Standard deviation for goals
+    const goalVariance =
+      recentMatches.reduce((s, m) => s + Math.pow(m.playerGoals - avgGoals, 2), 0) /
+      recentMatches.length;
+    const goalStdDev = Math.sqrt(goalVariance);
+
+    // Flag if current match is 3+ standard deviations from average
+    const goalsZScore = (match.playerGoals - avgGoals) / Math.max(goalStdDev, 0.1);
+    if (Math.abs(goalsZScore) > 3) {
+      issues.push({
+        type: 'anomalous_goal_performance',
+        severity: goalsZScore > 4 ? 'high' : 'medium',
+        message: `Current match (${match.playerGoals} goals) is ${Math.abs(goalsZScore).toFixed(1)}σ from player average (${avgGoals.toFixed(1)}).`,
+        threshold: Math.round(avgGoals + 3 * goalStdDev),
+        actual: match.playerGoals,
+      });
+    }
+
+    // Same for assists
+    const assistVariance =
+      recentMatches.reduce((s, m) => s + Math.pow(m.playerAssists - avgAssists, 2), 0) /
+      recentMatches.length;
+    const assistStdDev = Math.sqrt(assistVariance);
+    const assistsZScore = (match.playerAssists - avgAssists) / Math.max(assistStdDev, 0.1);
+
+    if (Math.abs(assistsZScore) > 3) {
+      issues.push({
+        type: 'anomalous_assist_performance',
+        severity: assistsZScore > 4 ? 'high' : 'medium',
+        message: `Current match (${match.playerAssists} assists) is ${Math.abs(assistsZScore).toFixed(1)}σ from player average (${avgAssists.toFixed(1)}).`,
+        threshold: Math.round(avgAssists + 3 * assistStdDev),
+        actual: match.playerAssists,
+      });
+    }
+
+    // Duration anomaly
+    if (
+      Math.abs(match.duration - avgDuration) >
+      avgDuration * 0.5
+    ) {
+      issues.push({
+        type: 'anomalous_duration',
+        severity: 'low',
+        message: `Match duration ${match.duration}' differs significantly from average ${avgDuration.toFixed(0)}'.`,
+      });
+    }
+
+    return {
+      detected: issues.length > 0,
+      issues,
+    };
+  }
+
+  /**
+   * Compare player's performance across matches for trends
+   */
+  private static checkComparison(
+    match: GuestMatch,
+    matchHistory: GuestMatch[]
+  ): {
+    valid: boolean;
+    issues: ValidationIssue[];
+  } {
+    const issues: ValidationIssue[] = [];
+
+    if (matchHistory.length < 5) {
+      return { valid: true, issues: [] };
+    }
+
+    const allMatches = [match, ...matchHistory];
+    const recent5 = allMatches.slice(0, 5);
+    const earlier5 = allMatches.slice(5, 10);
+
+    if (earlier5.length < 5) {
+      return { valid: true, issues: [] };
+    }
+
+    // Calculate recent vs earlier averages
+    const recentAvgGoals = recent5.reduce((s, m) => s + m.playerGoals, 0) / 5;
+    const earlierAvgGoals = earlier5.reduce((s, m) => s + m.playerGoals, 0) / 5;
+
+    // Flag if there's sudden jump in performance
+    const goalImprovement = recentAvgGoals - earlierAvgGoals;
+    if (goalImprovement > 3) {
+      issues.push({
+        type: 'sudden_performance_spike',
+        severity: 'medium',
+        message: `Recent performance (${recentAvgGoals.toFixed(1)} goals avg) up ${goalImprovement.toFixed(1)} from earlier (${earlierAvgGoals.toFixed(1)}).`,
+      });
+    }
+
+    // Check for win rate spike (unlikely to have 5+ wins in a row with random opponents)
+    const recentWins = recent5.filter(m => m.result === 'win').length;
+    const earlierWins = earlier5.filter(m => m.result === 'win').length;
+
+    if (recentWins >= 4 && earlierWins <= 2) {
+      issues.push({
+        type: 'unusual_win_streak',
+        severity: 'low',
+        message: `Recent win streak (4/5) contrasts with earlier (${earlierWins}/5). Could indicate skill improvement or luck.`,
+      });
+    }
+
+    return {
+      valid: issues.filter(i => i.severity === 'critical' || i.severity === 'high').length === 0,
+      issues,
+    };
+  }
+
+  /**
+   * Calculate overall validation score (0-100)
+   */
+  private static calculateScore(
+    issues: ValidationIssue[],
+    warnings: ValidationIssue[]
+  ): number {
+    let score = 100;
+
+    // Deduct for each issue based on severity
+    issues.forEach(issue => {
+      if (issue.severity === 'critical') {
+        score -= 25;
+      } else if (issue.severity === 'high') {
+        score -= 15;
+      } else if (issue.severity === 'medium') {
+        score -= 8;
+      } else {
+        score -= 3;
+      }
+    });
+
+    // Deduct less for warnings
+    warnings.forEach(warning => {
+      if (warning.severity === 'high') {
+        score -= 5;
+      } else if (warning.severity === 'medium') {
+        score -= 3;
+      } else {
+        score -= 1;
+      }
+    });
+
+    return Math.max(0, score);
+  }
+
+  /**
+   * Determine if match is suspicious enough to flag
+   */
+  static isSuspicious(validation: ValidationResult): boolean {
+    return (
+      validation.score < 70 ||
+      validation.issues.filter(i => i.severity === 'critical').length > 0 ||
+      validation.issues.filter(i => i.severity === 'high').length > 1
+    );
+  }
+
+  /**
+   * Generate human-readable validation report
+   */
+  static generateReport(validation: ValidationResult): string {
+    const lines: string[] = [];
+
+    lines.push(`VALIDATION REPORT`);
+    lines.push(`==================`);
+    lines.push(`Score: ${validation.score}/100`);
+    lines.push(`Status: ${validation.isValid ? 'VALID' : 'INVALID'}`);
+    lines.push(`Timestamp: ${new Date(validation.timestamp).toISOString()}`);
+    lines.push(``);
+
+    if (validation.issues.length > 0) {
+      lines.push(`CRITICAL ISSUES (${validation.issues.length}):`);
+      validation.issues.forEach(issue => {
+        lines.push(`  [${issue.severity.toUpperCase()}] ${issue.type}`);
+        lines.push(`  ${issue.message}`);
+        if (issue.threshold !== undefined && issue.actual !== undefined) {
+          lines.push(`  Expected ≤ ${issue.threshold}, Got ${issue.actual}`);
+        }
+        lines.push(``);
+      });
+    }
+
+    if (validation.warnings.length > 0) {
+      lines.push(`WARNINGS (${validation.warnings.length}):`);
+      validation.warnings.forEach(warning => {
+        lines.push(`  [${warning.severity.toUpperCase()}] ${warning.type}`);
+        lines.push(`  ${warning.message}`);
+        lines.push(``);
+      });
+    }
+
+    lines.push(`CHECKS SUMMARY:`);
+    lines.push(
+      `  Reasonableness: ${validation.checksSummary.reasonableness ? '✓' : '✗'}`
+    );
+    lines.push(
+      `  Consistency: ${validation.checksSummary.consistency ? '✓' : '✗'}`
+    );
+    lines.push(`  Anomaly Detection: ${validation.checksSummary.anomaly ? '✓' : '✗'}`);
+    lines.push(
+      `  Comparative Analysis: ${validation.checksSummary.comparison ? '✓' : '✗'}`
+    );
+
+    return lines.join('\n');
+  }
+}
