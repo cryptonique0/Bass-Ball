@@ -542,7 +542,636 @@ function decidePlayerAction(
 }
 ```
 
-### 2.2 Layer 2: Per-Frame Tactical Decisions (Dynamic, High-Frequency)
+### 2.1.5 Formation System: Dynamic Spatial Blueprints
+
+**Purpose**: Formations are not static dots—they're dynamic spatial anchors that shift with the ball, compress with tactics, but maintain shape integrity.
+
+**Core Concept**: Each formation is defined as a set of **relative anchors** (positional offsets from a pivot point). These anchors:
+1. Shift spatially based on ball location
+2. Compress/expand based on tactical parameters
+3. Allow individual player deviations (capped to avoid chaos)
+
+**Formation Definition**:
+
+```typescript
+interface Formation {
+  formationId: string;        // "4-2-3-1", "3-5-2", "4-3-3", etc.
+  
+  // Relative anchors (pitch coordinates, relative to pivot)
+  // Pitch dimensions: width=100, depth=100 (normalized)
+  // Origin: (0,0) at center of pitch
+  positions: {
+    GK: Vector2;              // Goalkeeper
+    CB_L: Vector2;            // Center back left
+    CB_R: Vector2;            // Center back right
+    DM?: Vector2;             // Defensive midfielder (optional)
+    CM_L: Vector2;            // Center midfielder left
+    CM_R: Vector2;            // Center midfielder right
+    CAM?: Vector2;            // Attacking midfielder (optional)
+    LW?: Vector2;             // Left winger (optional)
+    RW?: Vector2;             // Right winger (optional)
+    ST: Vector2;              // Striker(s)
+  };
+  
+  // Compactness anchor (unit reference point)
+  pivotPosition: Vector2;     // Usually (0, 0) or varies by play style
+  
+  // Maximum allowed deviation from anchor per player
+  maxDeviation: number;       // e.g., 3–5 (in pitch coordinates)
+}
+
+// Example: 4-2-3-1 formation
+const formation_4231: Formation = {
+  formationId: "4-2-3-1",
+  positions: {
+    GK:   {x:   0, y: -45},   // Deep goalkeeper line
+    CB_L: {x: -10, y: -30},   // Center backs at 30m from goal
+    CB_R: {x:  10, y: -30},
+    DM:   {x:   0, y: -10},   // Defensive pivot in front of CBs
+    CM_L: {x: -15, y:   5},   // Midfielders slightly advanced
+    CM_R: {x:  15, y:   5},
+    CAM:  {x:   0, y:  15},   // Attacking mid between midfield and striker
+    ST:   {x:   0, y:  30},   // Striker advanced
+  },
+  pivotPosition: {x: 0, y: -25},  // Pivot around midfield line
+  maxDeviation: 4,
+};
+
+// Example: 3-5-2 formation (more attacking)
+const formation_352: Formation = {
+  formationId: "3-5-2",
+  positions: {
+    GK:   {x:   0, y: -45},
+    CB_L: {x: -15, y: -30},   // Wider center backs
+    CB_R: {x:  15, y: -30},
+    CM:   {x:   0, y:  -5},   // Single pivot
+    LW:   {x: -25, y:  10},   // Wing-backs push high
+    RW:   {x:  25, y:  10},
+    CAM:  {x:  -8, y:  18},   // Two attacking mids
+    ST_L: {x:  -5, y:  35},   // Two strikers
+    ST_R: {x:   5, y:  35},
+  },
+  pivotPosition: {x: 0, y: -20},
+  maxDeviation: 5,
+};
+```
+
+**Anchor Shifting Based on Ball Location**:
+
+```typescript
+interface FormationState {
+  formation: Formation;
+  currentAnchors: Map<string, Vector3>;  // Player role → current anchor position
+  activePivot: Vector3;                  // Current pivot point
+}
+
+// Ball location shifts formation anchors (defensive retreat, attacking press)
+function updateFormationAnchors(
+  gameState: GameState,
+  formation: Formation,
+  teamTactics: TeamTactics
+): FormationState {
+  
+  // Base anchors from formation definition
+  let newAnchors = new Map(formation.positions);
+  
+  // RULE 1: Defensive shift (ball in attacking half)
+  if (gameState.ballPosition.y > 0) {
+    // Ball is in opponent's half → formation shifts forward
+    const advanceDistance = Math.min(20, gameState.ballPosition.y * 0.5);
+    newAnchors.forEach((pos, role) => {
+      newAnchors.set(role, {
+        x: pos.x,
+        y: pos.y + advanceDistance,  // Shift entire formation forward
+      });
+    });
+  }
+  
+  // RULE 2: Defensive retreat (ball in defensive half)
+  if (gameState.ballPosition.y < -20) {
+    // Ball is in defensive half → compact formation
+    const retreatDistance = Math.abs(gameState.ballPosition.y) * 0.3;
+    newAnchors.forEach((pos, role) => {
+      newAnchors.set(role, {
+        x: pos.x,
+        y: pos.y - retreatDistance,  // Shift formation back
+      });
+    });
+  }
+  
+  // RULE 3: Width adjustment (ball on wing)
+  const ballXDistance = Math.abs(gameState.ballPosition.x);
+  if (ballXDistance > 30) {
+    // Ball on wing → formation narrows toward ball
+    const narrowFactor = 0.8 - (ballXDistance / 100) * 0.2;
+    newAnchors.forEach((pos, role) => {
+      const newX = pos.x * narrowFactor;  // Pull toward center
+      newAnchors.set(role, {x: newX, y: pos.y});
+    });
+  }
+  
+  return {
+    formation,
+    currentAnchors: newAnchors,
+    activePivot: gameState.ballPosition,  // Pivot around ball location
+  };
+}
+```
+
+**Compression/Expansion Based on Tactics**:
+
+```typescript
+// Tactical parameters (Layer 1) directly affect spatial compactness
+function applyTacticalCompression(
+  anchors: Map<string, Vector2>,
+  teamTactics: TeamTactics,
+  formation: Formation
+): Map<string, Vector2> {
+  
+  const compressed = new Map(anchors);
+  const pivot = formation.pivotPosition;
+  
+  // RULE 1: High pressing (pressingIntensity > 70) → compact and advanced
+  if (teamTactics.pressingIntensity > 70) {
+    compressed.forEach((pos, role) => {
+      // Pull toward pivot and advance
+      const towardPivot = {
+        x: pos.x * 0.85,     // 15% narrower
+        y: pos.y + 5,        // 5m more advanced
+      };
+      compressed.set(role, towardPivot);
+    });
+  }
+  
+  // RULE 2: Low defensive line (lineHeight < 40) → stretched shape
+  if (teamTactics.lineHeight < 40) {
+    compressed.forEach((pos, role) => {
+      const stretched = {
+        x: pos.x * 1.15,     // 15% wider
+        y: pos.y - 10,       // Deeper
+      };
+      compressed.set(role, stretched);
+    });
+  }
+  
+  // RULE 3: Narrow formation (lineWidth < 40) → compact horizontally
+  if (teamTactics.lineWidth < 40) {
+    compressed.forEach((pos, role) => {
+      compressed.set(role, {
+        x: pos.x * 0.6,      // Significantly narrower
+        y: pos.y,
+      });
+    });
+  }
+  
+  // RULE 4: Wide formation (lineWidth > 75) → stretched horizontally
+  if (teamTactics.lineWidth > 75) {
+    compressed.forEach((pos, role) => {
+      compressed.set(role, {
+        x: pos.x * 1.3,      // Significantly wider
+        y: pos.y,
+      });
+    });
+  }
+  
+  // RULE 5: Fast tempo → slightly more advanced
+  if (teamTactics.tempo === "fast") {
+    compressed.forEach((pos, role) => {
+      compressed.set(role, {
+        x: pos.x,
+        y: pos.y + 3,        // More aggressive positioning
+      });
+    });
+  }
+  
+  return compressed;
+}
+```
+
+**Individual Player Deviations (Capped)**:
+
+```typescript
+interface PlayerPosition {
+  player: Player;
+  anchorPosition: Vector2;     // Where formation says they should be
+  currentPosition: Vector3;    // Where they actually are (can deviate)
+  deviationAllowed: number;    // Max distance from anchor
+}
+
+// Each player can deviate from anchor, but capped
+function calculatePlayerTargetPosition(
+  player: Player,
+  formation: Formation,
+  tacticalAnchors: Map<string, Vector2>,
+  playerDecision: PlayerAction
+): Vector3 {
+  
+  // 1. Get formation anchor for this player's role
+  const anchor = tacticalAnchors.get(player.position);
+  if (!anchor) return player.currentPosition;  // Fallback
+  
+  // 2. Get max allowed deviation for this formation
+  const maxDeviation = formation.maxDeviation;
+  
+  // 3. Calculate player's desired position based on action
+  const desiredPos = calculateDesiredPosition(playerDecision, anchor);
+  
+  // 4. Cap deviation from anchor
+  const deviation = distance(desiredPos, anchor);
+  if (deviation > maxDeviation) {
+    // Player wants to deviate too far → cap it
+    const cappedPos = moveToward(anchor, desiredPos, maxDeviation);
+    return cappedPos;
+  }
+  
+  return desiredPos;
+}
+
+// Example: CM wants to "offerSupport" but can only deviate 4m from anchor
+function calculateDesiredPosition(
+  action: PlayerAction,
+  anchor: Vector2
+): Vector3 {
+  switch (action.actionType) {
+    case "offerSupport":
+      // Move 3–4m forward from anchor
+      return {x: anchor.x, y: anchor.y + 4, z: 0};
+    
+    case "carry_ball":
+      // Move 5m forward, but will be capped at 4m deviation
+      return {x: anchor.x, y: anchor.y + 5, z: 0};
+    
+    case "hold_zone":
+      // Stay at anchor
+      return {x: anchor.x, y: anchor.y, z: 0};
+    
+    case "press_defender":
+      // Move toward defender, capped by deviation limit
+      return {x: anchor.x + 2, y: anchor.y + 3, z: 0};
+    
+    default:
+      return {x: anchor.x, y: anchor.y, z: 0};
+  }
+}
+```
+
+**Determinism Guarantee**:
+
+```typescript
+// Formation dynamics are fully deterministic
+function evaluateFormationState(
+  gameState: GameState,
+  formation: Formation,
+  teamTactics: TeamTactics,
+  seed: string
+): FormationState {
+  
+  // 1. Update anchors based on ball location (deterministic)
+  const anchorsAfterBallShift = updateFormationAnchors(
+    gameState,
+    formation,
+    teamTactics
+  );
+  
+  // 2. Apply tactical compression (deterministic)
+  const anchorsAfterCompression = applyTacticalCompression(
+    anchorsAfterBallShift.currentAnchors,
+    teamTactics,
+    formation
+  );
+  
+  // 3. All players are now positioned around these anchors
+  // Individual deviations are capped and deterministic (no RNG)
+  
+  return {
+    formation,
+    currentAnchors: anchorsAfterCompression,
+    activePivot: gameState.ballPosition,
+  };
+}
+
+// VERIFICATION: Same gameState + formation + teamTactics = same anchors (always)
+```
+
+**Why This Works**:
+
+1. ✅ **Fluidity**: Formation shifts with ball location, reacts to tactics
+2. ✅ **Shape Integrity**: Anchors maintain formation structure despite movement
+3. ✅ **Individual Autonomy**: Players can deviate, but within guardrails
+4. ✅ **Deterministic**: No RNG, fully reproducible
+5. ✅ **Legible**: Anchor positions are visually clear in replay viewer
+6. ✅ **Performance**: Simple geometric calculations, O(n) per frame
+
+### 2.1.6 Pressing System: Trigger-Based Response
+
+**Purpose**: Pressing is not constant chasing—it's triggered response. Only the nearest valid players press, keeping behavior realistic and computationally efficient.
+
+**Core Problem**: Naive pressing (every player chases opponent with the ball) causes:
+- Unrealistic, chaotic movement
+- Defensive collapse (too many pressers leaves defense exposed)
+- Expensive computation (O(n²) distance checks every frame)
+
+**Solution**: Trigger-based pressing with radius, duration, and priority.
+
+**Pressing Triggers**:
+
+```typescript
+interface PressingTrigger {
+  triggerId: string;
+  triggerType: enum;         // "bad_touch" | "back_to_goal" | "sideline_trap" | "numerical_advantage"
+  emittingPlayer: Player;    // Player observing the trigger
+  triggerPosition: Vector3;  // Where the trigger occurred
+  
+  // Press signal properties
+  radius: number;            // How far the press reaches (in meters)
+  duration: number;          // How long the press lasts (in frames)
+  priority: number;          // Higher = more important, overrides other actions
+  
+  // Constraints (from Layer 1)
+  pressingIntensity: number; // Team's pressing intensity (0–100)
+  maxPressers: number;       // How many players can press (based on formation)
+}
+
+// Trigger 1: Bad first touch
+const badTouchTrigger = (
+  opponent: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics
+): PressingTrigger | null => {
+  
+  // Detect bad first touch: ball speed after receiving pass is low/erratic
+  const touchQuality = opponent.lastTouchQuality;  // 0–100
+  
+  if (touchQuality < 40) {
+    return {
+      triggerId: `bad_touch_${opponent.id}_${gameState.frameNumber}`,
+      triggerType: "bad_touch",
+      emittingPlayer: opponent,
+      triggerPosition: opponent.position,
+      radius: 15,                                  // 15m press radius
+      duration: 30,                               // 30 frames (~500ms)
+      priority: 80,
+      pressingIntensity: teamTactics.pressingIntensity,
+      maxPressers: Math.ceil(teamTactics.pressingIntensity / 25),  // 1–4 pressers
+    };
+  }
+  return null;
+};
+
+// Trigger 2: Back to goal (vulnerable position)
+const backToGoalTrigger = (
+  opponent: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics
+): PressingTrigger | null => {
+  
+  // Opponent is facing away from goal (back to goal position)
+  const facingAwayFromGoal = opponent.facingDirection.dot(
+    gameState.ballPosition.subtract(opponent.position)
+  ) < 0;
+  
+  if (facingAwayFromGoal && teamTactics.pressingIntensity > 50) {
+    return {
+      triggerId: `back_to_goal_${opponent.id}_${gameState.frameNumber}`,
+      triggerType: "back_to_goal",
+      emittingPlayer: opponent,
+      triggerPosition: opponent.position,
+      radius: 18,                                  // Larger radius for vulnerable position
+      duration: 40,                               // Longer duration
+      priority: 75,
+      pressingIntensity: teamTactics.pressingIntensity,
+      maxPressers: Math.ceil(teamTactics.pressingIntensity / 20),  // More pressers
+    };
+  }
+  return null;
+};
+
+// Trigger 3: Sideline trap (positional advantage)
+const sidelineTrapTrigger = (
+  opponent: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics
+): PressingTrigger | null => {
+  
+  // Opponent near sideline (cornered, limited escape routes)
+  const distanceToSideline = Math.abs(Math.abs(opponent.position.x) - 50);  // Field width = 100
+  
+  if (distanceToSideline < 8) {  // Within 8m of sideline
+    return {
+      triggerId: `sideline_trap_${opponent.id}_${gameState.frameNumber}`,
+      triggerType: "sideline_trap",
+      emittingPlayer: opponent,
+      triggerPosition: opponent.position,
+      radius: 12,                                  // Tight press radius
+      duration: 50,                               // Extended duration (corner them)
+      priority: 90,                               // High priority (positional advantage)
+      pressingIntensity: teamTactics.pressingIntensity,
+      maxPressers: 2,                             // Usually 2 players trap
+    };
+  }
+  return null;
+};
+
+// Trigger 4: Numerical advantage (we have more nearby players)
+const numericalAdvantageTrigger = (
+  opponent: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics
+): PressingTrigger | null => {
+  
+  const ourPlayersNearby = countPlayersNearby("us", opponent.position, 20);  // Within 20m
+  const theirPlayersNearby = countPlayersNearby("them", opponent.position, 20);
+  
+  if (ourPlayersNearby > theirPlayersNearby + 1) {  // We have 2+ more players
+    return {
+      triggerId: `numerical_adv_${opponent.id}_${gameState.frameNumber}`,
+      triggerType: "numerical_advantage",
+      emittingPlayer: opponent,
+      triggerPosition: opponent.position,
+      radius: 20,                                  // Large radius (we can afford to press)
+      duration: 20,                               // Shorter duration (use advantage quickly)
+      priority: 70,
+      pressingIntensity: teamTactics.pressingIntensity,
+      maxPressers: Math.min(ourPlayersNearby - 1, 3),  // Use excess players
+    };
+  }
+  return null;
+};
+```
+
+**Press Signal Evaluation (Every Frame)**:
+
+```typescript
+interface PressSignal {
+  trigger: PressingTrigger;
+  validPressers: Player[];  // Nearest players who can respond
+  activePressers: Player[]; // Actually pressing (limited by maxPressers)
+}
+
+function evaluatePressingTriggers(
+  gameState: GameState,
+  teamTactics: TeamTactics,
+  team: Team
+): PressSignal[] {
+  
+  const signals: PressSignal[] = [];
+  const opponents = gameState.getOpponentTeam(team);
+  
+  for (const opponent of opponents) {
+    // Check all trigger types
+    const triggers = [
+      badTouchTrigger(opponent, gameState, teamTactics),
+      backToGoalTrigger(opponent, gameState, teamTactics),
+      sidelineTrapTrigger(opponent, gameState, teamTactics),
+      numericalAdvantageTrigger(opponent, gameState, teamTactics),
+    ].filter(t => t !== null);
+    
+    for (const trigger of triggers) {
+      // Find valid pressers
+      const validPressers = findValidPressers(
+        team,
+        trigger.emittingPlayer,
+        trigger.radius,
+        trigger.priority
+      );
+      
+      // Select only nearest ones (limited by maxPressers)
+      const activePressers = selectNearestPlayers(
+        validPressers,
+        trigger.emittingPlayer.position,
+        trigger.maxPressers
+      );
+      
+      signals.push({
+        trigger,
+        validPressers,
+        activePressers,
+      });
+    }
+  }
+  
+  // Merge conflicting signals (same player can't press 2 places)
+  return resolvePressingConflicts(signals);
+}
+
+// Determine which players can respond to a press signal
+function findValidPressers(
+  team: Team,
+  targetOpponent: Player,
+  radius: number,
+  priority: number
+): Player[] {
+  
+  const valid: Player[] = [];
+  
+  for (const player of team.players) {
+    // Skip if already committed to another action
+    if (player.currentAction.priority > priority) {
+      continue;
+    }
+    
+    // Skip if out of range
+    const distance = player.position.distance(targetOpponent.position);
+    if (distance > radius) {
+      continue;
+    }
+    
+    // Skip if in attacking third (need to defend)
+    if (targetOpponent.position.y > 30) {
+      continue;
+    }
+    
+    // Skip goalkeepers
+    if (player.position === "GK") {
+      continue;
+    }
+    
+    valid.push(player);
+  }
+  
+  return valid;
+}
+
+// Select the N nearest players
+function selectNearestPlayers(
+  candidates: Player[],
+  targetPosition: Vector3,
+  maxCount: number
+): Player[] {
+  
+  return candidates
+    .sort((a, b) => {
+      const distA = a.position.distance(targetPosition);
+      const distB = b.position.distance(targetPosition);
+      return distA - distB;
+    })
+    .slice(0, maxCount);
+}
+
+// If same player is targeted for multiple presses, keep highest priority
+function resolvePressingConflicts(signals: PressSignal[]): PressSignal[] {
+  
+  const playerPresses = new Map<string, PressSignal>();
+  
+  for (const signal of signals) {
+    for (const presser of signal.activePressers) {
+      const existing = playerPresses.get(presser.id);
+      
+      if (!existing || signal.trigger.priority > existing.trigger.priority) {
+        playerPresses.set(presser.id, signal);
+      }
+    }
+  }
+  
+  // Return deduplicated signals
+  return Array.from(playerPresses.values());
+}
+```
+
+**Behavior Tree Integration**:
+
+```typescript
+// In player behavior tree, pressing signals override normal decisions
+
+function evaluatePlayerBehavior(
+  player: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics,
+  pressingSignals: PressSignal[]
+): PlayerAction {
+  
+  // Check if this player is in an active press signal
+  const pressSignal = pressingSignals.find(s =>
+    s.activePressers.some(p => p.id === player.id)
+  );
+  
+  if (pressSignal) {
+    // Pressing signal overrides normal behavior tree
+    return {
+      actionType: "press",
+      targetPlayer: pressSignal.trigger.emittingPlayer,
+      targetPosition: pressSignal.trigger.triggerPosition,
+      priority: pressSignal.trigger.priority,  // High priority, not negotiable
+      duration: pressSignal.trigger.duration,
+    };
+  }
+  
+  // Otherwise evaluate normal behavior tree
+  return evaluateNormalBehaviorTree(player, gameState, teamTactics);
+}
+```
+
+**Why This Works**:
+
+1. ✅ **Realistic**: Pressing is situational, not constant
+2. ✅ **Defensive Stability**: Limited pressers (1–4) prevent collapse
+3. ✅ **Computationally Cheap**: Only check triggers when conditions are met
+4. ✅ **Tactical Control**: pressingIntensity parameter scales maxPressers
+5. ✅ **Deterministic**: Trigger conditions are boolean, nearest-player selection is deterministic
+6. ✅ **Legible**: Each press signal can be logged and analyzed
+7. ✅ **Priority-Based**: Conflicts resolved by priority, not RNG
+
+### 2.2 Layer 2: Unit Shape Logic (Dynamic Adjustments)
 
 **Purpose**: Frame-by-frame decisions (pass/shoot/move) constrained by Layer 1.
 
@@ -828,24 +1457,415 @@ function buildTriggerSet(teamTactics: TeamTactics): UnitShapeTrigger[] {
 3. All triggers derived from Layer 1 (formation/pressing/tempo)
 4. No conflicting triggers (trigger priority system if needed)
 
-### 2.3 Layer 3: Animation & Physical Application (Execution)
+### 2.3 Layer 3: Player Role Behavior Trees (Decision Making)
 
-**Purpose**: Translate tactical decisions into character animations, physics, ball movement.
+**Purpose**: Each player position makes decisions based on a finite, deterministic behavior tree. No ML, no random branching—only priority ordering.
 
-**Update Frequency**: Every frame (driven by Layer 2 outputs)
+**Why Not ML?**
+1. **Determinism**: ML outputs are probabilistic, can't guarantee same input = same output
+2. **Legibility**: Player can't debug why an ML model chose something
+3. **Replayability**: Behavior trees can be exactly replayed; ML models drift with hardware
+4. **Audit-ability**: Server can verify every decision matches the tree
+
+**Update Frequency**: Every frame, per player
+
+**Behavior Tree Structure**:
+
+```typescript
+type BehaviorNode = DecisionNode | ActionNode | CompositeNode;
+
+interface DecisionNode {
+  type: "decision";
+  condition: () => boolean;  // Pure function, no RNG, no state
+  trueBranch: BehaviorNode;
+  falseBranch: BehaviorNode;
+}
+
+interface ActionNode {
+  type: "action";
+  action: PlayerAction;  // Pass, shoot, move, tackle, etc.
+  priority: number;      // For tie-breaking
+}
+
+interface CompositeNode {
+  type: "composite";
+  operator: "sequence" | "selector";  // Sequence: all must succeed; Selector: first success wins
+  children: BehaviorNode[];
+}
+
+// Player action (output of behavior tree)
+interface PlayerAction {
+  actionType: enum;  // "offer_support" | "carry_ball" | "recycle_possession" | "step_up" | "hold_zone" | "press" | "cover" | etc.
+  targetPosition?: Vector3;
+  targetPlayer?: Player;
+  priority: number;  // Used for tie-breaking deterministically
+}
+```
+
+**Example: Central Midfielder (CM) Behavior Tree**:
+
+```typescript
+const cmBehaviorTree: BehaviorNode = {
+  type: "composite",
+  operator: "selector",  // First matching condition wins
+  children: [
+    {
+      type: "decision",
+      condition: () => gameState.possession === "us",  // Team in possession
+      trueBranch: {
+        type: "composite",
+        operator: "selector",
+        children: [
+          // Priority 1: If passing lane open → offer support
+          {
+            type: "decision",
+            condition: () => hasPassingLane(cmPlayer, gameState),
+            trueBranch: {
+              type: "action",
+              action: {
+                actionType: "offer_support",
+                targetPosition: bestSupportPosition(cmPlayer, gameState),
+                priority: 100,  // Highest priority
+              },
+            },
+          },
+          // Priority 2: If space ahead → carry ball
+          {
+            type: "decision",
+            condition: () => hasSpaceAhead(cmPlayer, gameState),
+            trueBranch: {
+              type: "action",
+              action: {
+                actionType: "carry_ball",
+                targetPosition: spaceAhead(cmPlayer, gameState),
+                priority: 80,
+              },
+            },
+          },
+          // Priority 3: Else → recycle possession
+          {
+            type: "action",
+            action: {
+              actionType: "recycle_possession",
+              targetPlayer: findBackwardPassTarget(cmPlayer, gameState),
+              priority: 50,
+            },
+          },
+        ],
+      },
+      falseBranch: {
+        type: "composite",
+        operator: "selector",
+        children: [
+          // Team out of possession
+          // Priority 1: If pressing trigger → step up
+          {
+            type: "decision",
+            condition: () => shouldPress(cmPlayer, gameState, teamTactics),
+            trueBranch: {
+              type: "action",
+              action: {
+                actionType: "step_up",
+                targetPosition: pressedTarget(cmPlayer, gameState),
+                priority: 90,
+              },
+            },
+          },
+          // Priority 2: Else → hold zone
+          {
+            type: "action",
+            action: {
+              actionType: "hold_zone",
+              targetPosition: defZoneAnchor(cmPlayer, teamShape),
+              priority: 40,
+            },
+          },
+        ],
+      },
+    },
+  ],
+};
+```
+
+**Behavior Trees for All Positions**:
+
+```typescript
+interface PositionBehavior {
+  position: enum;  // "CB" | "LB" | "RB" | "CDM" | "CM" | "CAM" | "LW" | "RW" | "ST" | etc.
+  tree: BehaviorNode;
+}
+
+const positionBehaviors: PositionBehavior[] = [
+  // Defensive positions
+  {
+    position: "CB",
+    tree: {
+      type: "composite",
+      operator: "selector",
+      children: [
+        {
+          type: "decision",
+          condition: () => isBallNear(cb, gameState, 20),  // Within 20m
+          trueBranch: { type: "action", action: { actionType: "cover_ball", priority: 100 } },
+        },
+        {
+          type: "decision",
+          condition: () => isOpponentRunning(cb, gameState),
+          trueBranch: { type: "action", action: { actionType: "track_player", priority: 90 } },
+        },
+        { type: "action", action: { actionType: "hold_line", priority: 50 } },
+      ],
+    },
+  },
+  {
+    position: "LB",
+    tree: {
+      type: "composite",
+      operator: "selector",
+      children: [
+        {
+          type: "decision",
+          condition: () => gameState.possession === "us",
+          trueBranch: {
+            type: "composite",
+            operator: "selector",
+            children: [
+              {
+                type: "decision",
+                condition: () => isWingerIsolated(leftWinger, gameState),
+                trueBranch: { type: "action", action: { actionType: "overlap", priority: 95 } },
+              },
+              { type: "action", action: { actionType: "support_midfield", priority: 60 } },
+            ],
+          },
+          falseBranch: {
+            type: "composite",
+            operator: "selector",
+            children: [
+              {
+                type: "decision",
+                condition: () => shouldPress(lb, gameState, teamTactics),
+                trueBranch: { type: "action", action: { actionType: "press_winger", priority: 85 } },
+              },
+              { type: "action", action: { actionType: "hold_zone", priority: 45 } },
+            ],
+          },
+        },
+      ],
+    },
+  },
+  // Midfield positions
+  {
+    position: "CDM",
+    tree: {
+      type: "composite",
+      operator: "selector",
+      children: [
+        {
+          type: "decision",
+          condition: () => gameState.possession === "us",
+          trueBranch: {
+            type: "composite",
+            operator: "selector",
+            children: [
+              {
+                type: "decision",
+                condition: () => hasPassingLane(cdm, gameState),
+                trueBranch: { type: "action", action: { actionType: "distribute", priority: 100 } },
+              },
+              { type: "action", action: { actionType: "hold_ball", priority: 55 } },
+            ],
+          },
+          falseBranch: {
+            type: "composite",
+            operator: "selector",
+            children: [
+              {
+                type: "decision",
+                condition: () => isBallNear(cdm, gameState, 15),
+                trueBranch: { type: "action", action: { actionType: "tackle_press", priority: 100 } },
+              },
+              { type: "action", action: { actionType: "cover_gaps", priority: 70 } },
+            ],
+          },
+        },
+      ],
+    },
+  },
+  // Attacking positions
+  {
+    position: "ST",
+    tree: {
+      type: "composite",
+      operator: "selector",
+      children: [
+        {
+          type: "decision",
+          condition: () => gameState.possession === "us",
+          trueBranch: {
+            type: "composite",
+            operator: "selector",
+            children: [
+              {
+                type: "decision",
+                condition: () => isClear(st, gameState),
+                trueBranch: { type: "action", action: { actionType: "make_space", priority: 100 } },
+              },
+              {
+                type: "decision",
+                condition: () => canShoot(st, gameState),
+                trueBranch: { type: "action", action: { actionType: "shoot", priority: 95 } },
+              },
+              { type: "action", action: { actionType: "hold_up_play", priority: 60 } },
+            ],
+          },
+          falseBranch: {
+            type: "composite",
+            operator: "selector",
+            children: [
+              {
+                type: "decision",
+                condition: () => shouldPress(st, gameState, teamTactics),
+                trueBranch: { type: "action", action: { actionType: "press_defender", priority: 90 } },
+              },
+              { type: "action", action: { actionType: "cover_striker_space", priority: 50 } },
+            ],
+          },
+        },
+      ],
+    },
+  },
+];
+```
+
+**Evaluation (Every Frame, Per Player)**:
+
+```typescript
+function evaluatePlayerBehavior(
+  player: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics,
+  teamShape: UnitShape[]
+): PlayerAction {
+  
+  const behavior = positionBehaviors.find(b => b.position === player.position);
+  if (!behavior) return defaultAction(player);
+  
+  // Traverse tree until action node found
+  return evaluateNode(behavior.tree, player, gameState, teamTactics, teamShape);
+}
+
+function evaluateNode(
+  node: BehaviorNode,
+  player: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics,
+  teamShape: UnitShape[]
+): PlayerAction {
+  
+  switch (node.type) {
+    case "decision":
+      const conditionMet = node.condition();
+      const nextNode = conditionMet ? node.trueBranch : node.falseBranch;
+      return evaluateNode(nextNode, player, gameState, teamTactics, teamShape);
+    
+    case "action":
+      return node.action;
+    
+    case "composite":
+      if (node.operator === "selector") {
+        // First successful child wins (priority ordering)
+        for (const child of node.children) {
+          const action = evaluateNode(child, player, gameState, teamTactics, teamShape);
+          if (action && action.priority > 0) {
+            return action;
+          }
+        }
+      } else if (node.operator === "sequence") {
+        // All children must evaluate to actions
+        let combinedAction: PlayerAction = { actionType: "noop", priority: 0 };
+        for (const child of node.children) {
+          const action = evaluateNode(child, player, gameState, teamTactics, teamShape);
+          if (!action) return { actionType: "noop", priority: 0 };
+          combinedAction = mergeActions(combinedAction, action);
+        }
+        return combinedAction;
+      }
+      break;
+  }
+  
+  return { actionType: "noop", priority: 0 };
+}
+```
+
+**Determinism Guarantee**:
+
+```typescript
+function evaluatePlayerDecisions(
+  gameState: GameState,
+  teamTactics: TeamTactics,
+  seed: string
+): Map<string, PlayerAction> {
+  
+  const decisions = new Map<string, PlayerAction>();
+  
+  for (const player of gameState.allPlayers) {
+    // Determinism: same player + same game state → same action
+    const action = evaluatePlayerBehavior(
+      player,
+      gameState,
+      teamTactics,
+      teamShape
+    );
+    
+    // If tie-breaking needed (multiple actions same priority),
+    // use seed-based selection (deterministic)
+    decisions.set(player.id, resolveTiebreak(action, seed, player.id));
+  }
+  
+  return decisions;
+}
+
+// Deterministic tie-break (not RNG)
+function resolveTiebreak(
+  action: PlayerAction,
+  seed: string,
+  playerId: string
+): PlayerAction {
+  // Use hash of (seed + playerId) to select consistently
+  const hash = hashSeed(seed + playerId);
+  action.priority = (action.priority * 1000) + (hash % 1000);
+  return action;
+}
+```
+
+**Key Rules** (Non-Negotiable):
+
+1. ✅ **No Random Branching**: Only priority ordering
+2. ✅ **Finite Trees**: Each position has 5–10 possible actions max
+3. ✅ **Deterministic Conditions**: All checks are boolean (no probability)
+4. ✅ **No State Leakage**: Conditions only use gameState, never random state
+5. ✅ **Priority Ordering**: Ties broken deterministically by seed
+6. ✅ **Debuggable**: Tree structure can be visualized and traced
+
+### 2.4 Layer 4: Animation & Physical Application (Execution)
+
+**Purpose**: Translate tactical decisions (player actions) into character animations, physics, and ball movement.
+
+**Update Frequency**: Every frame (driven by Layer 3 outputs)
 
 **Responsibility**:
-- Animation selection (which run/pass/tackle animation?)
+- Animation selection (which run/pass/tackle animation matches the action?)
 - Physics intensity (how hard do we kick the ball?)
 - Movement timing (how quickly do we move to decision point?)
 
-**Constraints from Layers 1 & 2**:
+**Constraints from Layers 1-3**:
 - Animation selection respects player role (from Layer 1)
-- Physics respects decision outcome (from Layer 2)
+- Physics respects decision outcome (from Layer 3)
 
-**Placeholder**: Layer 3 will be specified separately.
+**Placeholder**: Layer 4 will be specified separately.
 
-### 2.4 Layer 4: Feedback & Event Generation (Verification)
+### 2.5 Layer 5: Feedback & Event Generation (Verification)
 
 **Purpose**: Log all decisions and outcomes for legibility, verification, and replay.
 
@@ -859,27 +1879,56 @@ function buildTriggerSet(teamTactics: TeamTactics): UnitShapeTrigger[] {
 
 **Placeholder**: Layer 4 will be specified separately.
 
-### 2.5 Layer Update Flow Diagram
+### 2.6 Layer Update Flow Diagram (Complete)
 
 ```
 Pre-Match or Event Triggers
   ↓
-Layer 1: TeamTactics updated
+Layer 1: TeamTactics updated (formation, pressing, tempo, etc.)
+  ↓
+Formation System: Calculate formation anchors based on ball location & tactics
+  ├─ Anchors shift (ball position → forward/back)
+  ├─ Compression applied (lineHeight, pressingIntensity, lineWidth → compact/expand)
+  └─ Current formation state: anchors + deviations capped
   ↓
 Every Frame:
-  ├─ Layer 2: Decisions derived from TeamTactics
-  ├─ Layer 3: Animations/physics applied
-  ├─ Layer 4: Events logged & signed
+  ├─ Layer 2: Unit shapes updated (midfield compresses, fullback overlaps, etc.)
+  ├─ Layer 3: Player behavior trees evaluated (each player decides action)
+  ├─ Layer 4: Animations/physics applied (decision + anchor → movement)
+  ├─ Layer 5: Events logged & signed (why it happened, server verification)
   └─ State advanced to next frame
   ↓
-Replay Verification: Re-run Layers 2-4 with same Layer 1 + seed
+Replay Verification: Re-run Formation System + Layers 2-5 with same Layer 1 + seed
+```
+
+**Data Flow Example** (Ball enters zone 14, 4-2-3-1 formation):
+
+```
+Layer 1 (Static): formation=4-2-3-1, pressingIntensity=35
+  ↓
+Formation System:
+  - Ball in attacking half → shift anchors forward +8m
+  - pressingIntensity 35 (moderate) → compress formation slightly
+  - Result: CM anchor moves from (−15, 5) to (−13, 10)
+  ↓
+Layer 2 (Trigger): ballInZone(14) → unit shapes adjust compactness
+  ↓
+Layer 3 (Decision): CM evaluates tree with new anchor position:
+  IF possession → IF passingLane → offerSupport (priority 100)
+  ↓
+Layer 4 (Animation): CM action "offerSupport" → play "support_run" animation
+  → Target position: anchor (−13, 10) + deviation (+2, 0) = (−11, 10)
+  ↓
+Layer 5 (Logging): logged: "CM pressed into zone 14, chose support, moved to (−11, 10)"
+  ↓
+Replay: Replay verifier runs Formation System + Layers 2-5 with seed, confirms identical outcome
 ```
 
 ---
 
 ## 3. Tactical Decision System
 
-### 2.1 Player Choices (What Players Control)
+### 3.1 Player Choices (What Players Control)
 
 ```typescript
 interface PlayerTacticalChoices {
@@ -924,7 +1973,7 @@ interface PlayerTacticalChoices {
 }
 ```
 
-### 2.2 Deterministic Decision Engine
+### 3.2 Deterministic Decision Engine
 
 ```typescript
 class TacticalDecisionEngine {
@@ -1056,7 +2105,7 @@ class TacticalDecisionEngine {
 }
 ```
 
-### 2.3 Expressiveness in Practice
+### 3.3 Expressiveness in Practice
 
 Same formation, different parameters = different match:
 
@@ -1094,7 +2143,7 @@ const defensiveStyle = {
 
 ## 4. Determinism Infrastructure
 
-### 3.1 Seeding Strategy
+### 4.1 Seeding Strategy
 
 ```typescript
 interface DeterminismSeed {
@@ -1148,7 +2197,7 @@ function simulatePhysics(state: MatchState, seed: string) {
 }
 ```
 
-### 3.2 Replay Storage & Verification
+### 4.2 Replay Storage & Verification
 
 ```typescript
 interface VerifiableReplay {
@@ -1243,7 +2292,7 @@ async function verifyReplay(replay: VerifiableReplay): Promise<VerificationResul
 
 ## 5. Expressiveness: How Choices Matter
 
-### 4.1 Formation Effects
+### 5.1 Formation Effects
 
 ```typescript
 // Each formation has inherent tactical profile (deterministic)
@@ -1321,7 +2370,7 @@ for (let i = 0; i < 100; i++) {
 // But each match is tactically interesting (not predetermined 55% win)
 ```
 
-### 4.2 Parameter Effects
+### 5.2 Parameter Effects
 
 ```typescript
 // Defensive line height affects goal vulnerability (deterministic)
@@ -1369,7 +2418,7 @@ const pressingIntensityExperiment = {
 
 ## 6. Server Authority Implementation
 
-### 5.1 Client-Server Communication
+### 6.1 Client-Server Communication
 
 ```typescript
 // CLIENT: Player sends INTENT only
@@ -1435,7 +2484,7 @@ io.on("connection", (socket) => {
 });
 ```
 
-### 5.2 Preventing Client Desync
+### 6.2 Preventing Client Desync
 
 ```typescript
 // Clients might try to claim different match states
@@ -1494,7 +2543,7 @@ class DesyncPrevention {
 
 ## 7. Legibility: Understanding Why
 
-### 6.1 Decision Logs
+### 7.1 Decision Logs
 
 ```typescript
 interface DecisionLog {
@@ -1604,7 +2653,7 @@ function generateDecisionReview(match: Match) {
 }
 ```
 
-### 6.2 Tactical Visualization
+### 7.2 Tactical Visualization
 
 ```typescript
 interface TacticalVisualization {
