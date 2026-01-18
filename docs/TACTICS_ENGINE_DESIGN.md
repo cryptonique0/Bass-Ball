@@ -457,7 +457,427 @@ function verifyDisputedMatch(replay: Replay) {
 
 ---
 
-## 2. Tactical Decision System
+## 2. Tactical Abstraction Layers
+
+The tactics engine is structured in **distinct layers**, each with different update frequencies and responsibilities. This prevents a monolithic "decide everything every frame" approach that would be both unpredictable and performance-intensive.
+
+### 2.1 Layer 1: Team Tactical Profile (Pre-Frame, Event-Driven)
+
+**Purpose**: Defines the team's stable tactical approach. Updated infrequently, applies to all decisions.
+
+**Update Triggers** (only these events trigger Layer 1 updates):
+- Match kickoff
+- Tactical change command (player adjusts formation/pressing/build-up)
+- Major events (red card, injury, goal)
+- Substitution
+- Halftime
+
+**Update Frequency**: ~6-8 times per 90-minute match (vs 5,400 frames/match at 60fps)
+
+**Data Structure**:
+
+```typescript
+interface TeamTactics {
+  // Core formation identity
+  formation: FormationID;  // e.g., "4-3-3", "4-2-3-1", "3-5-2"
+  
+  // Defensive shape parameters
+  lineHeight: number;        // 0–100 (0=deep defensive shape, 100=high press)
+  lineWidth: number;         // 0–100 (0=compact, 100=stretched wide)
+  pressingIntensity: number; // 0–100 (0=no press, 100=aggressive man-to-man)
+  pressingTrigger: enum;     // "immediate" | "delayed" | "ball_recovery"
+  
+  // Possession & tempo
+  tempo: enum;               // "slow" | "controlled" | "fast"
+  buildUpStyle: enum;        // "short" | "mixed" | "direct"
+  
+  // Defensive philosophy
+  defensiveStyle: enum;      // "zonal" | "hybrid" | "man"
+  
+  // Advanced adjustments (optional)
+  wingAttackMode: enum;      // "narrow" | "balanced" | "wide"
+  setPlayMode: enum;         // "defensive" | "balanced" | "aggressive"
+  injuryTime: boolean;       // True = defensive, time-wasting adjustments
+}
+
+// Team tactics never change mid-frame
+// All per-frame decisions are derived from this stable layer
+```
+
+**Why This Matters**:
+1. **Predictability**: Player knows what the team is trying to do
+2. **Expressiveness**: Swapping 4-3-3 to 3-5-2 should feel obviously different, not just tweak parameters
+3. **Determinism**: Same team tactics + same situation = deterministic decision outcomes
+4. **Server Authority**: Server validates all tactical changes before applying
+
+**Example Decision Cascade**:
+
+```typescript
+// Pre-match or in-match tactical change
+let teamTactics: TeamTactics = {
+  formation: "4-2-3-1",
+  lineHeight: 45,        // Medium defensive line
+  lineWidth: 70,         // Fairly stretched
+  pressingIntensity: 35, // Moderate pressing
+  tempo: "controlled",
+  buildUpStyle: "short",
+  defensiveStyle: "zonal",
+};
+
+// Every frame, decisions are derived from this stable tactical profile
+function decidePlayerAction(
+  player: Player,
+  gameState: GameState,
+  teamTactics: TeamTactics  // ← Layer 1 feeds into Layer 2
+): PlayerAction {
+  // Player role is defined by formation
+  const role = getPlayerRole(player, teamTactics.formation);
+  
+  // Decision is constrained by team tactics
+  if (gameState.possession === "us") {
+    return decidePossessionAction(player, role, gameState, teamTactics);
+  } else {
+    return decideDefensiveAction(player, role, gameState, teamTactics);
+  }
+}
+```
+
+### 2.2 Layer 2: Per-Frame Tactical Decisions (Dynamic, High-Frequency)
+
+**Purpose**: Frame-by-frame decisions (pass/shoot/move) constrained by Layer 1.
+
+**Update Frequency**: Every frame (60fps = 5,400 times/match)
+
+**Responsibility**:
+- Which player moves where
+- Pressing trigger (do we press this pass?)
+- Possession action (pass/dribble/shoot)
+- Movement intensity (how urgent is the action?)
+
+**Constraints from Layer 1**:
+- lineHeight determines max defensive line position
+- pressingIntensity determines how aggressively we challenge
+- buildUpStyle determines available pass targets
+- tempo determines decision urgency
+
+**Data Structure**:
+
+```typescript
+// Game field divided into zones for trigger detection
+interface PitchZone {
+  zoneId: number;        // 1-14 (standard zones: 6 defensive, 8 middle, 14 attacking)
+  center: Vector2;
+  radius: number;
+}
+
+// Unit shape definition
+interface UnitShape {
+  unitName: enum;        // "back_line" | "midfield" | "front_line"
+  
+  // Player positions within unit (relative to team formation)
+  players: Player[];
+  
+  // Compactness: horizontal spacing between players
+  horizontalCompactness: number;  // 0–100 (0=spread wide, 100=tightly packed)
+  
+  // Vertical spacing: distance between units
+  verticalSpacing: number;        // 0–100 (0=detached, 100=tight formation)
+  
+  // Pivot point for the unit's shape
+  pivot: Vector3;
+}
+
+// Trigger rules: determine when unit shape changes
+interface UnitShapeTrigger {
+  triggerId: string;
+  condition: TriggerCondition;    // Boolean expression
+  targetUnit: UnitShape;
+  adjustment: ShapeAdjustment;    // What changes
+  transitionTime: number;         // Frames to apply change (smoothing)
+}
+
+// Conditions are deterministic and zone-based
+type TriggerCondition = {
+  ballInZone?: number[];          // "If ball in zone 14 or 13"
+  playerIsolated?: string;        // "If winger has no passing option"
+  formationMismatch?: boolean;    // "If opponent has more central players"
+  pressureDetected?: boolean;     // "If pressed by 2+ players"
+  scoreState?: "behind" | "equal" | "ahead";
+  timeState?: "early" | "midgame" | "late";
+};
+
+// What changes when trigger fires
+interface ShapeAdjustment {
+  deltaHorizontalCompactness?: number;   // e.g., +15 (tighten)
+  deltaVerticalSpacing?: number;         // e.g., -10 (compress)
+  newPivot?: Vector3;                    // Optional: shift formation anchor
+  affectPlayerSubset?: string[];         // Optional: only certain players move
+}
+```
+
+**Layer 2 Trigger Logic Examples**:
+
+```typescript
+// Example 1: Ball enters attacking zone → midfield compresses
+const midTightenTrigger: UnitShapeTrigger = {
+  triggerId: "ball_zone14_midfield_compress",
+  condition: {
+    ballInZone: [13, 14],  // Attacking zones (rightmost 2 zones)
+  },
+  targetUnit: middlefieldUnit,
+  adjustment: {
+    deltaHorizontalCompactness: +20,  // Tighten horizontally
+    deltaVerticalSpacing: -5,         // Compress vertically
+    transitionTime: 8,                // 8 frames (~133ms at 60fps)
+  },
+};
+
+// Example 2: Winger isolated → fullback overlaps
+const wingOverlapTrigger: UnitShapeTrigger = {
+  triggerId: "isolated_winger_fullback_overlap",
+  condition: {
+    playerIsolated: "right_winger",  // Winger has no passing option
+  },
+  targetUnit: backlineUnit,
+  adjustment: {
+    deltaHorizontalCompactness: -15,  // Spread horizontally
+    newPivot: rightWingerPosition,    // Pivot shape toward isolated player
+    affectPlayerSubset: ["right_fullback"],  // Only fullback moves
+    transitionTime: 12,
+  },
+};
+
+// Example 3: Losing match with 10 minutes left → defensive setup tightens
+const injuryTimeDefensiveTrigger: UnitShapeTrigger = {
+  triggerId: "losing_injurytime_defensive",
+  condition: {
+    scoreState: "behind",
+    timeState: "late",
+  },
+  targetUnit: backlineUnit,
+  adjustment: {
+    deltaHorizontalCompactness: +30,  // Very tight
+    deltaVerticalSpacing: +15,        // Spread out vertically (deep setup)
+    transitionTime: 60,               // Gradual transition (1 second)
+  },
+};
+
+// Example 4: Opponent has numerical advantage in midfield → compress
+const numericalDisadvantageTrigger: UnitShapeTrigger = {
+  triggerId: "opponent_midfield_dominance_compress",
+  condition: {
+    formationMismatch: true,          // Calculated from formations
+  },
+  targetUnit: middlefieldUnit,
+  adjustment: {
+    deltaHorizontalCompactness: +25,
+    deltaVerticalSpacing: 0,
+    transitionTime: 30,
+  },
+};
+```
+
+**Layer 2 Evaluation Loop (Every Frame)**:
+
+```typescript
+function updateUnitShapes(
+  gameState: GameState,
+  teamTactics: TeamTactics,  // ← Layer 1 constraint
+  currentShapes: UnitShape[]
+): UnitShape[] {
+  
+  const triggers = buildTriggerSet(teamTactics); // Derived from Layer 1
+  const newShapes = [...currentShapes];          // Copy current shapes
+  
+  // Evaluate all triggers deterministically (boolean checks only)
+  for (const trigger of triggers) {
+    if (evaluateCondition(trigger.condition, gameState)) {
+      // This trigger fires
+      const targetUnitIndex = newShapes.findIndex(
+        u => u.unitName === trigger.targetUnit.unitName
+      );
+      
+      if (targetUnitIndex !== -1) {
+        // Apply adjustment smoothly
+        newShapes[targetUnitIndex] = applyShapeAdjustment(
+          newShapes[targetUnitIndex],
+          trigger.adjustment,
+          trigger.transitionTime
+        );
+      }
+    }
+  }
+  
+  return newShapes;
+}
+
+// Deterministic condition evaluation
+function evaluateCondition(
+  condition: TriggerCondition,
+  gameState: GameState
+): boolean {
+  
+  // All checks are deterministic (no RNG)
+  let result = true;
+  
+  if (condition.ballInZone !== undefined) {
+    const ballZone = getPitchZone(gameState.ballPosition);
+    result = result && condition.ballInZone.includes(ballZone);
+  }
+  
+  if (condition.playerIsolated !== undefined) {
+    const player = findPlayer(gameState, condition.playerIsolated);
+    const hasPassOption = countPassOptions(player, gameState) > 0;
+    result = result && !hasPassOption;  // Isolated = no options
+  }
+  
+  if (condition.formationMismatch !== undefined) {
+    const ourCentralDensity = countCentralPlayers(gameState, "us");
+    const theirCentralDensity = countCentralPlayers(gameState, "them");
+    result = result && (theirCentralDensity > ourCentralDensity);
+  }
+  
+  if (condition.scoreState !== undefined) {
+    const currentScore = gameState.score;
+    const expected = condition.scoreState === "behind" ? currentScore.them > currentScore.us :
+                     condition.scoreState === "equal"  ? currentScore.them === currentScore.us :
+                     currentScore.them < currentScore.us;
+    result = result && expected;
+  }
+  
+  if (condition.timeState !== undefined) {
+    const remainingTime = gameState.totalTime - gameState.elapsedTime;
+    const isEarly = remainingTime > 2700;   // > 45 minutes
+    const isLate = remainingTime < 900;     // < 15 minutes
+    const expected = condition.timeState === "early" ? isEarly :
+                     condition.timeState === "late"  ? isLate :
+                     !isEarly && !isLate;
+    result = result && expected;
+  }
+  
+  return result;
+}
+
+// Smooth shape transitions
+function applyShapeAdjustment(
+  currentShape: UnitShape,
+  adjustment: ShapeAdjustment,
+  transitionFrames: number
+): UnitShape {
+  
+  const deltaPerFrame = {
+    compactness: (adjustment.deltaHorizontalCompactness ?? 0) / transitionFrames,
+    spacing: (adjustment.deltaVerticalSpacing ?? 0) / transitionFrames,
+  };
+  
+  return {
+    ...currentShape,
+    horizontalCompactness: Math.min(100, Math.max(0, 
+      currentShape.horizontalCompactness + deltaPerFrame.compactness
+    )),
+    verticalSpacing: Math.min(100, Math.max(0,
+      currentShape.verticalSpacing + deltaPerFrame.spacing
+    )),
+    pivot: adjustment.newPivot ?? currentShape.pivot,
+  };
+}
+```
+
+**How Layer 1 Constrains Layer 2**:
+
+```typescript
+function buildTriggerSet(teamTactics: TeamTactics): UnitShapeTrigger[] {
+  // Layer 1 (TeamTactics) determines which triggers are active
+  
+  const triggers: UnitShapeTrigger[] = [];
+  
+  // High pressing teams get aggressive triggers
+  if (teamTactics.pressingIntensity > 70) {
+    triggers.push(ballZone14MidfieldCompressTrigger);
+    triggers.push(wingOverlapTrigger);
+    triggers.push(pressureDetectedTrigger);
+  }
+  
+  // Deep defensive teams get defensive triggers
+  if (teamTactics.lineHeight < 40) {
+    triggers.push(injuryTimeDefensiveTrigger);
+    triggers.push(numericalDisadvantageTrigger);
+  }
+  
+  // Wide formations get wing support triggers
+  if (teamTactics.lineWidth > 75) {
+    triggers.push(wingOverlapTrigger);  // More responsive
+  }
+  
+  return triggers;
+}
+```
+
+**Why This Is Deterministic**:
+
+1. **No RNG**: All conditions are boolean checks (ball in zone? player isolated?)
+2. **Zone-Based**: Game state divided into discrete zones (no floating-point edge cases)
+3. **Boolean Logic**: Conditions are true/false, deterministically evaluable
+4. **Seed Independence**: Triggers depend only on game state, not random seeds
+5. **Reproducible**: Same game state = same triggers fire = same shape adjustments
+
+**Constraints**:
+
+1. horizontalCompactness and verticalSpacing are clamped [0–100]
+2. Transitions are smooth (gradual over N frames, not instant)
+3. All triggers derived from Layer 1 (formation/pressing/tempo)
+4. No conflicting triggers (trigger priority system if needed)
+
+### 2.3 Layer 3: Animation & Physical Application (Execution)
+
+**Purpose**: Translate tactical decisions into character animations, physics, ball movement.
+
+**Update Frequency**: Every frame (driven by Layer 2 outputs)
+
+**Responsibility**:
+- Animation selection (which run/pass/tackle animation?)
+- Physics intensity (how hard do we kick the ball?)
+- Movement timing (how quickly do we move to decision point?)
+
+**Constraints from Layers 1 & 2**:
+- Animation selection respects player role (from Layer 1)
+- Physics respects decision outcome (from Layer 2)
+
+**Placeholder**: Layer 3 will be specified separately.
+
+### 2.4 Layer 4: Feedback & Event Generation (Verification)
+
+**Purpose**: Log all decisions and outcomes for legibility, verification, and replay.
+
+**Update Frequency**: Every frame (captures Layers 1-3 outputs)
+
+**Responsibility**:
+- Decision logging (why was this decision made?)
+- Event generation (what happened as a result?)
+- Server signature (sign the outcome)
+- Determinism verification (can this be reproduced?)
+
+**Placeholder**: Layer 4 will be specified separately.
+
+### 2.5 Layer Update Flow Diagram
+
+```
+Pre-Match or Event Triggers
+  ↓
+Layer 1: TeamTactics updated
+  ↓
+Every Frame:
+  ├─ Layer 2: Decisions derived from TeamTactics
+  ├─ Layer 3: Animations/physics applied
+  ├─ Layer 4: Events logged & signed
+  └─ State advanced to next frame
+  ↓
+Replay Verification: Re-run Layers 2-4 with same Layer 1 + seed
+```
+
+---
+
+## 3. Tactical Decision System
 
 ### 2.1 Player Choices (What Players Control)
 
@@ -672,7 +1092,7 @@ const defensiveStyle = {
 
 ---
 
-## 3. Determinism Infrastructure
+## 4. Determinism Infrastructure
 
 ### 3.1 Seeding Strategy
 
@@ -821,7 +1241,7 @@ async function verifyReplay(replay: VerifiableReplay): Promise<VerificationResul
 
 ---
 
-## 4. Expressiveness: How Choices Matter
+## 5. Expressiveness: How Choices Matter
 
 ### 4.1 Formation Effects
 
@@ -947,7 +1367,7 @@ const pressingIntensityExperiment = {
 
 ---
 
-## 5. Server Authority Implementation
+## 6. Server Authority Implementation
 
 ### 5.1 Client-Server Communication
 
@@ -1072,7 +1492,7 @@ class DesyncPrevention {
 
 ---
 
-## 6. Legibility: Understanding Why
+## 7. Legibility: Understanding Why
 
 ### 6.1 Decision Logs
 
@@ -1259,7 +1679,7 @@ const goalVisualization: TacticalVisualization = {
 
 ---
 
-## 7. Implementation Roadmap
+## 8. Implementation Roadmap
 
 ### Phase 1: Core Engine (Weeks 1-4)
 - [ ] Seeding system (deterministic hash chains)
@@ -1287,7 +1707,7 @@ const goalVisualization: TacticalVisualization = {
 
 ---
 
-## 8. Success Metrics
+## 9. Success Metrics
 
 A successful tactics engine meets these criteria:
 
