@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+/* Football Pitch Styles */
+.football-pitch {
+  background: linear-gradient(180deg, #2d5016 0%, #3a6b1f 50%, #2d5016 100%);
+  position: relative;
+  aspect-ratio: 105 / 68;
+  border: 4px solid #fff;
+}
+
+.pitch-center-circle {
+  position: absolute;
+  width: 45%;
+  height: 45%;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  top: 27.5%;
+  left: 27.5%;
+}
+
+.pitch-center-spot {
+  position: absolute;
+  width: 4%;
+  height: 4%;
+  background: #fff;
+  border-radius: 50%;
+  top: 48%;
+  left: 48%;
+}
+
+/* Player Styles */
+.player {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.player:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.player.selected {
+  box-shadow: 0 0 20px rgba(255, 255, 0, 0.8);
+  transform: scale(1.3);
+}
+
+.player.team-home {
+  background: linear-gradient(135deg, #ff0000, #cc0000);
+  border: 2px solid #fff;
+}
+
+.player.team-away {
+  background: linear-gradient(135deg, #0066ff, #0044cc);
+  border: 2px solid #fff;
+}
+
+/* Ball Styles */
+.ball {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle at 30% 30%, #ffffff, #f0f0f0);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset -1px -1px 2px rgba(0, 0, 0, 0.3);
+  animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Game UI */
+.card {
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
