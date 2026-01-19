@@ -2369,7 +2369,388 @@ Replay: Replay verifier runs Formation System + Layers 2-5 with seed, confirms i
 
 ---
 
-## 3. Tactical Decision System
+## 3. Deterministic Football Physics
+
+**Critical Foundation**: This is where most Web3 games fail—they ship with physics that can't be verified or replayed. We won't.
+
+### 3.1 Determinism-First Physics Rules
+
+**Physics must obey**:
+
+```typescript
+// Core requirements for deterministic physics
+
+interface DeterministicPhysicsRequirements {
+  // 1. Fixed timestep (no variable framerate)
+  fixedTimestepMs: 16.67;  // 60 ticks/sec, exactly
+  
+  // 2. No floating point drift
+  // - Always round to fixed precision (e.g., mm precision)
+  // - Use integer math where possible
+  // - Never accumulate floating point errors across frames
+  
+  // 3. Seeded pseudo-randomness only
+  // - Physics "noise" comes from deterministic seeded RNG
+  // - Same seed always produces same noise
+  // - Example: ball friction varies ±5%, but deterministically
+  
+  // 4. NO dependencies on:
+  // - Client framerate (60fps vs 120fps must produce same physics)
+  // - Local physics solvers (Unity vs Unreal must produce same physics)
+  // - Non-seeded randomness (Math.random() is forbidden)
+  // - Floating point precision (x86 vs ARM CPU must produce same physics)
+}
+```
+
+**The Right Way**:
+
+```typescript
+// Fixed timestep simulation (REQUIRED for determinism)
+function simulatePhysicsFrame(
+  gameState: GameState,
+  input: PlayerInput,
+  seed: string
+): GameState {
+  
+  // 1. Use EXACTLY 16.67ms per frame (60 ticks/sec)
+  // 2. No variable timesteps, no "catch-up" logic
+  // 3. Physics solver always runs the same code path
+  
+  const deltaTime = 1.0 / 60.0;  // Always 16.67ms
+  
+  // Apply forces (gravity, friction, etc.)
+  const newVelocity = applyForces(
+    gameState.ballVelocity,
+    deltaTime,
+    seed  // ← Seeded variance, not random
+  );
+  
+  // Update position
+  const newPosition = gameState.ballPosition.add(
+    newVelocity.multiply(deltaTime)
+  );
+  
+  // Collision detection (deterministic)
+  const postCollisionPos = handleCollisions(newPosition, gameState);
+  
+  return {
+    ballPosition: postCollisionPos,
+    ballVelocity: newVelocity,
+    // ...
+  };
+}
+
+// Forces with seeded variance (NOT randomness)
+function applyForces(
+  velocity: Vector3,
+  deltaTime: number,
+  seed: string
+): Vector3 {
+  
+  // Base friction coefficient
+  const baseFriction = 0.98;
+  
+  // Seeded variance (±5%, deterministic)
+  const rng = new SeededRandom(seed);
+  const frictionVariance = rng.nextFloat(-0.05, 0.05);
+  const actualFriction = baseFriction + frictionVariance;
+  
+  // Apply friction
+  const friction = velocity.multiply(actualFriction);
+  
+  // Apply gravity
+  const gravity = new Vector3(0, -9.81 * deltaTime, 0);
+  
+  // Result: same seed = same forces
+  return friction.add(gravity);
+}
+```
+
+**The Wrong Way** (What NOT to do):
+
+```typescript
+// ❌ WRONG: Variable timestep (framerate-dependent)
+function updatePhysics(deltaTime: number) {
+  // If client runs at 60fps: deltaTime = 16.67ms
+  // If client runs at 120fps: deltaTime = 8.33ms
+  // DIFFERENT PHYSICS!
+}
+
+// ❌ WRONG: Using floating point without rounding
+const ballPos = {x: 10.123456789, y: 20.987654321, z: 5.555555};
+// After 100 frames, accumulates floating point errors
+// Different CPU architectures produce different errors
+
+// ❌ WRONG: Non-seeded randomness
+if (Math.random() < 0.7) {
+  // Ball bounces. But Math.random() is different every run.
+  // Replay gets different bounce. UNREPLAYABLE.
+}
+
+// ❌ WRONG: Relying on local physics engine
+// "Let Unity/Unreal's physics solver handle it"
+// Different engines, different solvers = different results
+```
+
+### 3.2 Fixed-Point Math Implementation
+
+**Avoid floating-point drift** by using fixed-point or integer math:
+
+```typescript
+// Ball position in millimeters (integer)
+interface BallStateFixed {
+  posX_mm: number;      // Integer, no floating point
+  posY_mm: number;
+  posZ_mm: number;
+  
+  velX_mm_per_frame: number;  // Velocity in mm/frame
+  velY_mm_per_frame: number;
+  velZ_mm_per_frame: number;
+}
+
+// Simulation with integer math
+function simulatePhysicsFrameFixed(
+  state: BallStateFixed,
+  seed: string
+): BallStateFixed {
+  
+  // All calculations in integers (no floating point)
+  const rng = new SeededRandom(seed);
+  
+  // Friction: 0.98 in fixed-point = 980/1000
+  const frictionVariance = rng.nextInt(-50, 50);  // ±0.05 in fixed-point
+  const friction = (980 + frictionVariance) / 1000;
+  
+  // Apply friction to velocity
+  const newVelX = Math.floor((state.velX_mm_per_frame * friction));
+  const newVelY = Math.floor((state.velY_mm_per_frame * friction));
+  const newVelZ = Math.floor((state.velZ_mm_per_frame * friction));
+  
+  // Gravity: 9.81 m/s² = 9810 mm/s² per frame squared
+  const gravityAccel_mm_per_frame = 163;  // 9810 * (16.67ms)^2 / 1000
+  const newVelY_gravity = newVelY - gravityAccel_mm_per_frame;
+  
+  // Update position
+  const newPosX = state.posX_mm + newVelX;
+  const newPosY = state.posY_mm + newVelY_gravity;
+  const newPosZ = state.posZ_mm + newVelZ;
+  
+  // All integers, zero floating point errors
+  return {
+    posX_mm: newPosX,
+    posY_mm: newPosY,
+    posZ_mm: newPosZ,
+    velX_mm_per_frame: newVelX,
+    velY_mm_per_frame: newVelY_gravity,
+    velZ_mm_per_frame: newVelZ,
+  };
+}
+
+// Convert to floats for rendering (only, never for logic)
+function convertToRenderPosition(state: BallStateFixed): Vector3 {
+  return new Vector3(
+    state.posX_mm / 1000,  // mm to meters
+    state.posY_mm / 1000,
+    state.posZ_mm / 1000
+  );
+}
+```
+
+### 3.3 Collision Detection (Deterministic)
+
+**Player-ball collisions must be deterministic**:
+
+```typescript
+interface CollisionResult {
+  occurred: boolean;
+  collidingPlayer: Player;
+  contactPoint: Vector3;
+  impulse: Vector3;  // Deterministic from seed
+}
+
+function detectCollision(
+  ballState: BallStateFixed,
+  players: Player[],
+  seed: string
+): CollisionResult | null {
+  
+  const rng = new SeededRandom(seed);
+  
+  // Check each player (in fixed order for determinism)
+  const sortedPlayers = players.sort((a, b) => a.id.localeCompare(b.id));
+  
+  for (const player of sortedPlayers) {
+    const distance = calculateDistance(ballState, player);
+    
+    // Collision radius: player size ~1m
+    if (distance < 1.0) {
+      // Determine contact point (deterministic from positions)
+      const contactPoint = determineContactPoint(ballState, player);
+      
+      // Calculate impulse based on:
+      // - Player velocity direction
+      // - Player "force" (based on action)
+      // - Seed-based variance (±10%)
+      
+      const baseImpulse = calculateBaseImpulse(player, ballState);
+      const impulseVariance = rng.nextFloat(-0.1, 0.1);
+      const actualImpulse = baseImpulse.multiply(1 + impulseVariance);
+      
+      return {
+        occurred: true,
+        collidingPlayer: player,
+        contactPoint,
+        impulse: actualImpulse,
+      };
+    }
+  }
+  
+  return null;
+}
+
+// Deterministic player ordering (CRITICAL)
+function sortPlayersForCollision(players: Player[]): Player[] {
+  // Always sort by ID (ensures same order every time)
+  return players.sort((a, b) => a.id.localeCompare(b.id));
+}
+```
+
+### 3.4 Verification: Physics Determinism Test
+
+**How to verify physics are truly deterministic**:
+
+```typescript
+// Run same initial state + seed twice, verify results are identical
+
+async function verifyPhysicsDeterminism(): Promise<boolean> {
+  
+  const initialState: BallStateFixed = {
+    posX_mm: 5000,
+    posY_mm: 5000,
+    posZ_mm: 0,
+    velX_mm_per_frame: 100,
+    velY_mm_per_frame: 50,
+    velZ_mm_per_frame: 0,
+  };
+  
+  const seed = "test_seed_12345";
+  const numFrames = 1000;
+  
+  // Simulation 1
+  let state1 = initialState;
+  for (let i = 0; i < numFrames; i++) {
+    state1 = simulatePhysicsFrameFixed(state1, seed + i.toString());
+  }
+  
+  // Simulation 2 (same initial conditions, same seed)
+  let state2 = initialState;
+  for (let i = 0; i < numFrames; i++) {
+    state2 = simulatePhysicsFrameFixed(state2, seed + i.toString());
+  }
+  
+  // Verify identical (bit-for-bit)
+  const match = (
+    state1.posX_mm === state2.posX_mm &&
+    state1.posY_mm === state2.posY_mm &&
+    state1.posZ_mm === state2.posZ_mm &&
+    state1.velX_mm_per_frame === state2.velX_mm_per_frame &&
+    state1.velY_mm_per_frame === state2.velY_mm_per_frame &&
+    state1.velZ_mm_per_frame === state2.velZ_mm_per_frame
+  );
+  
+  if (!match) {
+    console.error("Physics are NOT deterministic!");
+    console.log("Run 1:", state1);
+    console.log("Run 2:", state2);
+    return false;
+  }
+  
+  console.log("✓ Physics are deterministic");
+  return true;
+}
+```
+
+### 3.5 Platform Independence
+
+**Ensure physics are identical across all platforms** (PC, mobile, console):
+
+```typescript
+// All physics calculations use the exact same code
+// No platform-specific physics engines
+
+// ❌ WRONG:
+// function updateBall() {
+//   if (platform === "Unity") {
+//     ballRigidbody.velocity = ...;  // Unity solver
+//   } else if (platform === "Unreal") {
+//     ballPhysics.applyForce(...);   // Unreal solver
+//   }
+// }
+// Different solvers = different physics
+
+// ✓ RIGHT:
+// Single physics simulation code that runs everywhere
+function updateBallUniversal(
+  state: BallStateFixed,
+  input: PlayerInput,
+  seed: string
+): BallStateFixed {
+  
+  // Same code on all platforms
+  // All integer math
+  // Single implementation
+  
+  return simulatePhysicsFrameFixed(state, seed);
+}
+
+// Platform code only handles rendering, not simulation
+function renderBall(state: BallStateFixed): void {
+  const renderPos = convertToRenderPosition(state);
+  
+  // Draw at renderPos (platform-specific renderer)
+  if (platform === "Unity") {
+    ballGameObject.transform.position = renderPos;
+  } else if (platform === "Unreal") {
+    ballActor->SetActorLocation(renderPos);
+  }
+}
+```
+
+### 3.6 Why This Matters for Web3
+
+**Deterministic physics = verifiable replays = trustless gameplay**:
+
+```
+Traditional FIFA/PES:
+Player A: "I kicked harder, should've scored"
+Developer: "Our RNG determined the shot direction. Deal with it."
+No way to verify.
+
+Bass Ball (Web3):
+Player A: "I kicked harder, should've scored"
+Player B: "Run the replay with the same seed. The physics must match."
+Replay verifier re-simulates → physics match exactly.
+Cause-effect is provable.
+```
+
+**The Stack**:
+```
+Layer 1: Tactics (Formation, Pressing, Stamina) ← Deterministic triggers
+  ↓
+Layer 2–3: Player Decisions ← Deterministic behavior trees
+  ↓
+Layer 4: Animations ← Driven by decisions
+  ↓
+Physics Simulation ← Fixed-point math, seeded variance
+  ↓
+Collision Results ← Deterministic outcomes
+  ↓
+Replay Verification ← Re-run entire stack with same seed, verify match
+```
+
+---
+
+## 4. Tactical Decision System
 
 ### 3.1 Player Choices (What Players Control)
 
@@ -2416,7 +2797,7 @@ interface PlayerTacticalChoices {
 }
 ```
 
-### 3.2 Deterministic Decision Engine
+### 4.2 Deterministic Decision Engine
 
 ```typescript
 class TacticalDecisionEngine {
@@ -2584,7 +2965,7 @@ const defensiveStyle = {
 
 ---
 
-## 4. Determinism Infrastructure
+## 5. Determinism Infrastructure
 
 ### 4.1 Seeding Strategy
 
@@ -2733,7 +3114,7 @@ async function verifyReplay(replay: VerifiableReplay): Promise<VerificationResul
 
 ---
 
-## 5. Expressiveness: How Choices Matter
+## 6. Expressiveness: How Choices Matter
 
 ### 5.1 Formation Effects
 
@@ -2859,7 +3240,7 @@ const pressingIntensityExperiment = {
 
 ---
 
-## 6. Server Authority Implementation
+## 7. Server Authority Implementation
 
 ### 6.1 Client-Server Communication
 
@@ -2984,7 +3365,7 @@ class DesyncPrevention {
 
 ---
 
-## 7. Legibility: Understanding Why
+## 8. Legibility: Understanding Why
 
 ### 7.1 Decision Logs
 
@@ -3171,7 +3552,7 @@ const goalVisualization: TacticalVisualization = {
 
 ---
 
-## 8. Implementation Roadmap
+## 9. Implementation Roadmap
 
 ### Phase 1: Core Engine (Weeks 1-4)
 - [ ] Seeding system (deterministic hash chains)
@@ -3199,7 +3580,7 @@ const goalVisualization: TacticalVisualization = {
 
 ---
 
-## 9. Success Metrics
+## 10. Success Metrics
 
 A successful tactics engine meets these criteria:
 
