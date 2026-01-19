@@ -2748,11 +2748,358 @@ Collision Results ← Deterministic outcomes
 Replay Verification ← Re-run entire stack with same seed, verify match
 ```
 
+### 3.7 Ball Model: Core Entity
+
+**Purpose**: The ball is a distinct entity with its own physics state. It's not a simple visual effect—it's the core of the simulation.
+
+**Ball Entity Definition**:
+
+```typescript
+interface Ball {
+  // Position (3D, in millimeters for precision)
+  posX_mm: number;
+  posY_mm: number;  // Height above ground
+  posZ_mm: number;
+  
+  // Velocity (mm/frame)
+  velX_mm_per_frame: number;
+  velY_mm_per_frame: number;
+  velZ_mm_per_frame: number;
+  
+  // Spin (rotation around vertical axis)
+  spinRadians: number;        // Rotation angle
+  spinDecayPerFrame: number;  // How quickly spin fades
+  
+  // State tracking
+  isGrounded: boolean;        // In contact with pitch?
+  contactPlayer: Player | null;  // Who last touched the ball?
+  lastContactFrame: number;   // When was it last touched?
+}
+
+// Initialize ball at center of pitch
+function initializeBall(): Ball {
+  return {
+    posX_mm: 5000,       // Center of 100m-wide pitch
+    posY_mm: 0,          // On ground
+    posZ_mm: 5000,       // Center of 100m-long pitch
+    velX_mm_per_frame: 0,
+    velY_mm_per_frame: 0,
+    velZ_mm_per_frame: 0,
+    spinRadians: 0,
+    spinDecayPerFrame: 0.98,  // Spin decays 2% per frame
+    isGrounded: true,
+    contactPlayer: null,
+    lastContactFrame: -1,
+  };
+}
+```
+
+**Movement Update (Per Tick)**:
+
+**CRITICAL**: All operations must be applied in this exact order. Changing order breaks determinism.
+
+```typescript
+// Order-locked physics update (MUST follow this sequence)
+function updateBallPhysics(
+  ball: Ball,
+  frameNumber: number,
+  seed: string
+): Ball {
+  
+  // Order matters! Each step depends on previous state.
+  
+  // STEP 1: Apply velocity to position
+  ball = applyVelocity(ball);
+  
+  // STEP 2: Apply gravity (affects Y velocity)
+  ball = applyGravity(ball);
+  
+  // STEP 3: Apply friction (reduces velocity, depends on height)
+  ball = applyFriction(ball, seed);
+  
+  // STEP 4: Apply spin decay (reduces spin)
+  ball = applySpinDecay(ball);
+  
+  // STEP 5: Resolve collisions (changes velocity, position)
+  ball = resolveCollisions(ball, frameNumber, seed);
+  
+  // STEP 6: Clamp values to valid ranges
+  ball = clampBallValues(ball);
+  
+  return ball;
+}
+
+// STEP 1: Apply velocity to position
+function applyVelocity(ball: Ball): Ball {
+  return {
+    ...ball,
+    posX_mm: ball.posX_mm + ball.velX_mm_per_frame,
+    posY_mm: ball.posY_mm + ball.velY_mm_per_frame,
+    posZ_mm: ball.posZ_mm + ball.velZ_mm_per_frame,
+  };
+}
+
+// STEP 2: Apply gravity (constant downward acceleration)
+function applyGravity(ball: Ball): Ball {
+  // Gravity: 9810 mm/s² = 163 mm/frame² (at 60fps)
+  const gravityAccel = 163;
+  
+  return {
+    ...ball,
+    velY_mm_per_frame: ball.velY_mm_per_frame - gravityAccel,
+  };
+}
+
+// STEP 3: Apply friction (ground friction when grounded, air resistance when airborne)
+function applyFriction(ball: Ball, seed: string): Ball {
+  const rng = new SeededRandom(seed);
+  
+  if (ball.isGrounded) {
+    // Ground friction: ball slows down on pitch
+    // Base friction: 0.96 (4% loss per frame)
+    const frictionVariance = rng.nextInt(-10, 10);  // ±1% variance (seeded)
+    const friction = (960 + frictionVariance) / 1000;
+    
+    return {
+      ...ball,
+      velX_mm_per_frame: Math.floor(ball.velX_mm_per_frame * friction),
+      velZ_mm_per_frame: Math.floor(ball.velZ_mm_per_frame * friction),
+      // Y velocity unaffected when grounded (will be set by ground contact)
+    };
+  } else {
+    // Air resistance: ball slows in flight
+    // Air friction: 0.985 (1.5% loss per frame)
+    const airResistance = 0.985;
+    
+    return {
+      ...ball,
+      velX_mm_per_frame: Math.floor(ball.velX_mm_per_frame * airResistance),
+      velY_mm_per_frame: Math.floor(ball.velY_mm_per_frame * airResistance),
+      velZ_mm_per_frame: Math.floor(ball.velZ_mm_per_frame * airResistance),
+    };
+  }
+}
+
+// STEP 4: Apply spin decay (spin gradually reduces)
+function applySpinDecay(ball: Ball): Ball {
+  // Spin decays by 2% per frame
+  const newSpin = ball.spinRadians * ball.spinDecayPerFrame;
+  
+  // Stop spinning if negligible
+  if (Math.abs(newSpin) < 0.001) {
+    return {
+      ...ball,
+      spinRadians: 0,
+    };
+  }
+  
+  return {
+    ...ball,
+    spinRadians: newSpin,
+  };
+}
+
+// STEP 5: Resolve collisions (pitch boundaries, ground, players)
+function resolveCollisions(
+  ball: Ball,
+  frameNumber: number,
+  seed: string
+): Ball {
+  const rng = new SeededRandom(seed);
+  
+  // Collision 1: Pitch boundaries (sidelines at x=±5000mm, endlines at z=±5000mm)
+  const pitchWidth = 5000;
+  const pitchLength = 5000;
+  
+  if (Math.abs(ball.posX_mm) > pitchWidth) {
+    // Ball out of bounds (left/right)
+    ball = {
+      ...ball,
+      posX_mm: Math.sign(ball.posX_mm) * pitchWidth,  // Clamp to boundary
+      velX_mm_per_frame: -ball.velX_mm_per_frame * 0.6,  // Bounce (60% restitution)
+    };
+  }
+  
+  if (Math.abs(ball.posZ_mm) > pitchLength) {
+    // Ball out of bounds (goal line)
+    ball = {
+      ...ball,
+      posZ_mm: Math.sign(ball.posZ_mm) * pitchLength,
+      velZ_mm_per_frame: -ball.velZ_mm_per_frame * 0.6,
+    };
+  }
+  
+  // Collision 2: Ground (pitch surface at Y = 0)
+  if (ball.posY_mm < 0) {
+    const restitution = 0.6;  // Ball bounces to 60% of impact height
+    const bounce = Math.abs(ball.velY_mm_per_frame) * restitution;
+    
+    ball = {
+      ...ball,
+      posY_mm: 0,  // Snap to ground
+      velY_mm_per_frame: bounce,  // Bounce upward
+      isGrounded: bounce < 50,  // Grounded if bounce is weak (0.3m/frame)
+    };
+  } else {
+    ball = {
+      ...ball,
+      isGrounded: false,  // Airborne
+    };
+  }
+  
+  // Collision 3: Player contact (handled separately, just update lastContact)
+  // (This is filled in by player collision detection)
+  
+  return ball;
+}
+
+// STEP 6: Clamp values to valid ranges (prevent extreme values)
+function clampBallValues(ball: Ball): Ball {
+  // Max ball velocity: 50 m/s = 50000 mm/s = ~833 mm/frame
+  const maxVelocity = 833;
+  
+  // Max height: 100m (shouldn't happen, but safety)
+  const maxHeight = 100000;
+  
+  return {
+    ...ball,
+    posY_mm: Math.min(ball.posY_mm, maxHeight),
+    velX_mm_per_frame: Math.max(-maxVelocity, Math.min(ball.velX_mm_per_frame, maxVelocity)),
+    velY_mm_per_frame: Math.max(-maxVelocity, Math.min(ball.velY_mm_per_frame, maxVelocity)),
+    velZ_mm_per_frame: Math.max(-maxVelocity, Math.min(ball.velZ_mm_per_frame, maxVelocity)),
+    spinRadians: ball.spinRadians % (Math.PI * 2),  // Wrap spin to 0–2π
+  };
+}
+```
+
+**Player-Ball Collision**:
+
+```typescript
+// Integrated into movement update (STEP 5)
+function detectAndResolvePlayerCollision(
+  ball: Ball,
+  players: Player[],
+  frameNumber: number,
+  seed: string
+): Ball {
+  
+  const rng = new SeededRandom(seed + "_collision");
+  
+  // Check each player (in deterministic order: sorted by ID)
+  const sortedPlayers = players.sort((a, b) => a.id.localeCompare(b.id));
+  
+  for (const player of sortedPlayers) {
+    const distance = calculateDistance(ball, player);
+    
+    // Contact distance: player radius ~0.5m = 500mm
+    if (distance < 500) {
+      
+      // Calculate impact direction and impulse
+      const contactNormal = calculateContactNormal(ball.pos, player.pos);
+      const relativeVelocity = subtractVectors(ball.vel, player.vel);
+      const impactVelocity = dotProduct(relativeVelocity, contactNormal);
+      
+      // Only collide if ball is moving toward player
+      if (impactVelocity < 0) {
+        
+        // Base impulse from player action
+        const baseImpulse = calculatePlayerActionForce(player);
+        
+        // Seeded variance (±15%)
+        const varianceScale = 1 + rng.nextFloat(-0.15, 0.15);
+        const actualImpulse = baseImpulse * varianceScale;
+        
+        // Apply impulse to ball
+        ball = {
+          ...ball,
+          velX_mm_per_frame: ball.velX_mm_per_frame + contactNormal.x * actualImpulse,
+          velY_mm_per_frame: ball.velY_mm_per_frame + contactNormal.y * actualImpulse,
+          velZ_mm_per_frame: ball.velZ_mm_per_frame + contactNormal.z * actualImpulse,
+          contactPlayer: player,
+          lastContactFrame: frameNumber,
+          // Spin is affected by contact point
+          spinRadians: calculateSpinFromContact(player, contactNormal, baseImpulse),
+        };
+        
+        // Move ball outside player collision radius
+        const separationDistance = 550;
+        const separation = contactNormal.multiply(separationDistance - distance);
+        ball = {
+          ...ball,
+          posX_mm: ball.posX_mm + separation.x,
+          posY_mm: ball.posY_mm + separation.y,
+          posZ_mm: ball.posZ_mm + separation.z,
+        };
+        
+        // Only first collision per frame
+        return ball;
+      }
+    }
+  }
+  
+  return ball;
+}
+```
+
+**Why Order Matters**:
+
+```
+WRONG ORDER example:
+1. Apply friction
+2. Apply velocity
+Result: Velocity is applied at reduced amount (friction already applied)
+
+CORRECT ORDER:
+1. Apply velocity (move ball)
+2. Apply friction (slow it down for next frame)
+Result: Velocity is applied fully, then reduced for next frame
+
+Determinism requires EXACT order. Any deviation changes physics.
+```
+
+**Verification**:
+
+```typescript
+function verifyBallMovement(): void {
+  const initialBall: Ball = {
+    posX_mm: 0,
+    posY_mm: 0,
+    posZ_mm: 0,
+    velX_mm_per_frame: 100,
+    velY_mm_per_frame: 200,
+    velZ_mm_per_frame: 50,
+    spinRadians: 1.0,
+    spinDecayPerFrame: 0.98,
+    isGrounded: true,
+    contactPlayer: null,
+    lastContactFrame: -1,
+  };
+  
+  const seed = "ball_test_seed";
+  
+  // Run 2 simulations
+  let ball1 = initialBall;
+  for (let i = 0; i < 1000; i++) {
+    ball1 = updateBallPhysics(ball1, i, seed + i);
+  }
+  
+  let ball2 = initialBall;
+  for (let i = 0; i < 1000; i++) {
+    ball2 = updateBallPhysics(ball2, i, seed + i);
+  }
+  
+  // Must be identical (bit-for-bit)
+  if (ballsMatch(ball1, ball2)) {
+    console.log("✓ Ball physics are deterministic");
+  } else {
+    console.error("✗ Ball physics are NOT deterministic");
+  }
+}
+```
+
 ---
 
 ## 4. Tactical Decision System
-
-### 3.1 Player Choices (What Players Control)
 
 ```typescript
 interface PlayerTacticalChoices {
@@ -2929,7 +3276,7 @@ class TacticalDecisionEngine {
 }
 ```
 
-### 3.3 Expressiveness in Practice
+### 4.3 Expressiveness in Practice
 
 Same formation, different parameters = different match:
 
@@ -2967,7 +3314,7 @@ const defensiveStyle = {
 
 ## 5. Determinism Infrastructure
 
-### 4.1 Seeding Strategy
+### 5.1 Seeding Strategy
 
 ```typescript
 interface DeterminismSeed {
@@ -3021,7 +3368,7 @@ function simulatePhysics(state: MatchState, seed: string) {
 }
 ```
 
-### 4.2 Replay Storage & Verification
+### 5.2 Replay Storage & Verification
 
 ```typescript
 interface VerifiableReplay {
