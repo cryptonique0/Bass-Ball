@@ -112,6 +112,11 @@ Complete technical specification: **20 markdown files, ~100,000 lines of code**
 |------|---------|
 | [docs/MATCH_EVENTS.md](docs/MATCH_EVENTS.md) | Event system: fouls, advantage rule, set pieces (corners, free kicks, penalties), injuries, referee logic, dispute resolution |
 
+**FIFA Rules & Real-World Football Mechanics**
+| File | Purpose |
+|------|---------|
+| [docs/FIFA_RULES_IMPLEMENTATION.md](docs/FIFA_RULES_IMPLEMENTATION.md) | **Complete FIFA ruleset implementation**: Disciplinary system (yellow/red cards, accumulation rules), suspension enforcement (1-10 match bans), red card appeals with cryptographic verification, Transfer windows (summer/winter/emergency), squad composition rules (11 starting + 7 subs, positional limits), offside detection, handball rules, penalty mechanics, injury system (minor/moderate/serious), league scoring (3 pts win), cup tournaments, player eligibility checks, blockchain-verified disciplinary records, smart contract suspension enforcement |
+
 **Why This Matters**: Bass Ball achieves Konami-level depth through:
 - **Skill-Based AI**: Every role has decision trees, not stats (CB reads play differently than Striker)
 - **Tactical Variety**: 5 formations × 5 presets × dynamic adjustments = 25+ distinct playstyles
