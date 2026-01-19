@@ -1,5 +1,39 @@
 // Match validation and fairness analysis system
 
+/**
+ * BASE Chain Network Configuration
+ * Support for both mainnet and testnet
+ */
+export enum BaseNetwork {
+  MAINNET = 'mainnet',
+  TESTNET = 'testnet',
+}
+
+export interface BaseNetworkConfig {
+  chainId: number;
+  rpcUrl: string;
+  blockExplorerUrl: string;
+  network: BaseNetwork;
+  name: string;
+}
+
+export const BASE_NETWORKS: Record<BaseNetwork, BaseNetworkConfig> = {
+  [BaseNetwork.MAINNET]: {
+    chainId: 8453,
+    rpcUrl: 'https://mainnet.base.org',
+    blockExplorerUrl: 'https://basescan.org',
+    network: BaseNetwork.MAINNET,
+    name: 'BASE Mainnet',
+  },
+  [BaseNetwork.TESTNET]: {
+    chainId: 84532,
+    rpcUrl: 'https://sepolia.base.org',
+    blockExplorerUrl: 'https://sepolia.basescan.org',
+    network: BaseNetwork.TESTNET,
+    name: 'BASE Sepolia Testnet',
+  },
+};
+
 export interface GuestMatch {
   matchId: string;
   timestamp: number;
@@ -53,6 +87,43 @@ interface TickBucket {
 }
 
 export class MatchValidator {
+  private static currentNetwork: BaseNetwork = BaseNetwork.MAINNET;
+
+  /**
+   * Set the active BASE network (mainnet or testnet)
+   */
+  static setNetwork(network: BaseNetwork): void {
+    this.currentNetwork = network;
+  }
+
+  /**
+   * Get the current active network configuration
+   */
+  static getNetwork(): BaseNetworkConfig {
+    return BASE_NETWORKS[this.currentNetwork];
+  }
+
+  /**
+   * Get network configuration by network type
+   */
+  static getNetworkConfig(network: BaseNetwork): BaseNetworkConfig {
+    return BASE_NETWORKS[network];
+  }
+
+  /**
+   * Check if running on mainnet
+   */
+  static isMainnet(): boolean {
+    return this.currentNetwork === BaseNetwork.MAINNET;
+  }
+
+  /**
+   * Check if running on testnet
+   */
+  static isTestnet(): boolean {
+    return this.currentNetwork === BaseNetwork.TESTNET;
+  }
+
   /**
    * Validate tick-based input rate limiting
    * Enforces max 5 inputs per 12-tick window (60Hz / 5 = 12 ticks per second)
