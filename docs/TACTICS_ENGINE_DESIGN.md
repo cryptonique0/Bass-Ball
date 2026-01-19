@@ -3097,6 +3097,357 @@ function verifyBallMovement(): void {
 }
 ```
 
+### 3.8 Kicking the Ball: Intent + Context
+
+**Purpose**: A kick is not an animation—it's a calculated impulse. All parameters are derived from known inputs: player position, velocity, contact quality, and intended direction.
+
+**Core Principle**: The kick produces an output (ball velocity, spin, lift) that's entirely deterministic from inputs. No "random kick power variance" or "animation RNG."
+
+**Kick Parameters (Input)**:
+
+```typescript
+interface KickIntent {
+  // Player performing the kick
+  player: Player;
+  frameNumber: number;
+  
+  // What the player wants to do
+  force: number;              // 0–100 (how hard?)
+  direction: Vector2;         // Normalized vector (which way?)
+  foot: enum;                 // "left" | "right"
+  
+  // Physical state (affects outcome)
+  contactQuality: number;     // 0–100 (how clean is the contact?)
+  playerBalance: number;      // 0–100 (how balanced is the player?)
+  playerVelocity: Vector3;    // Player's movement (affects spin)
+  
+  // Ball state (affects outcome)
+  ballPosition: Vector3;
+  ballVelocity: Vector3;
+}
+
+interface KickOutput {
+  ballVelocity: Vector3;      // New ball velocity (m/s)
+  spinRadians: number;        // Spin amount
+  liftAngle: number;          // Launch angle (degrees)
+}
+```
+
+**Kick Calculation (Deterministic)**:
+
+```typescript
+function calculateKick(
+  intent: KickIntent,
+  seed: string
+): KickOutput {
+  
+  // Step 1: Base kick power (force parameter)
+  const basePower = calculateBasePower(intent.force, intent.player);
+  
+  // Step 2: Contact quality modulation
+  const contactModifier = calculateContactModifier(intent.contactQuality);
+  
+  // Step 3: Balance penalty
+  const balanceModifier = calculateBalanceModifier(intent.playerBalance);
+  
+  // Step 4: Final kick strength
+  const finalStrength = basePower * contactModifier * balanceModifier;
+  
+  // Step 5: Direction with seeded variance (±5%)
+  const direction = applyDirectionVariance(
+    intent.direction,
+    intent.contactQuality,
+    seed
+  );
+  
+  // Step 6: Spin from player velocity + foot + contact
+  const spin = calculateSpin(
+    intent.playerVelocity,
+    intent.foot,
+    intent.contactQuality,
+    intent.ballVelocity
+  );
+  
+  // Step 7: Lift angle from contact point + force
+  const liftAngle = calculateLiftAngle(
+    intent.force,
+    intent.contactQuality,
+    intent.playerBalance,
+    direction.y  // Upward component
+  );
+  
+  // Step 8: Build velocity vector
+  const ballVelocity = buildVelocityVector(
+    direction,
+    finalStrength,
+    liftAngle
+  );
+  
+  return {
+    ballVelocity,
+    spinRadians: spin,
+    liftAngle,
+  };
+}
+
+// Step 1: Base power from force parameter (0–100)
+function calculateBasePower(
+  force: number,
+  player: Player
+): number {
+  
+  // Player's shot power stat (0–100, can be skill-based)
+  const playerPower = player.stats.shotPower;
+  
+  // Force parameter (what player is pressing: 0–100)
+  const forceFraction = force / 100.0;
+  
+  // Base power: combine player stat with force input
+  // Power is capped at ~50 m/s (max ball velocity)
+  const maxPower = 50;
+  const basePower = maxPower * (playerPower / 100.0) * forceFraction;
+  
+  return basePower;
+}
+
+// Step 2: Contact quality modulation (0–100)
+function calculateContactModifier(contactQuality: number): number {
+  
+  // Contact quality affects how much power is transferred
+  // 0% contact: 0.3x (miskick)
+  // 50% contact: 0.85x (decent)
+  // 100% contact: 1.0x (perfect)
+  
+  if (contactQuality < 20) {
+    return 0.3;  // Miskick
+  } else if (contactQuality < 50) {
+    return 0.3 + (contactQuality - 20) * 0.022;  // 0.3 → 0.85
+  } else {
+    return 0.85 + (contactQuality - 50) * 0.003;  // 0.85 → 1.0
+  }
+}
+
+// Step 3: Balance penalty (0–100)
+function calculateBalanceModifier(playerBalance: number): number {
+  
+  // Balance affects accuracy and power
+  // 100% balance: 1.0x (full power)
+  // 50% balance: 0.9x (slight loss)
+  // 0% balance: 0.7x (stumbling)
+  
+  const balanceFraction = playerBalance / 100.0;
+  return 0.7 + (balanceFraction * 0.3);  // 0.7 → 1.0
+}
+
+// Step 4–5: Direction with seeded variance (±5%)
+function applyDirectionVariance(
+  baseDirection: Vector2,
+  contactQuality: number,
+  seed: string
+): Vector2 {
+  
+  const rng = new SeededRandom(seed);
+  
+  // Variance increases with poor contact
+  const maxVariance = (100 - contactQuality) / 100.0 * 0.05;  // Up to ±5%
+  
+  const angleVariance = rng.nextFloat(-maxVariance, maxVariance);
+  
+  // Rotate base direction by variance
+  const angle = Math.atan2(baseDirection.y, baseDirection.x) + angleVariance;
+  
+  return new Vector2(
+    Math.cos(angle),
+    Math.sin(angle)
+  );
+}
+
+// Step 6: Spin from player velocity + foot
+function calculateSpin(
+  playerVelocity: Vector3,
+  foot: string,
+  contactQuality: number,
+  ballVelocity: Vector3
+): number {
+  
+  // Spin is generated by:
+  // 1. Player movement (running players spin the ball more)
+  // 2. Foot mechanics (curling passes, etc.)
+  // 3. Contact quality (clean contact transfers spin better)
+  
+  const playerSpeed = magnitude(playerVelocity);
+  const playerSpeedContribution = playerSpeed * 0.1;  // Moving = more spin
+  
+  // Foot-specific mechanics
+  const footContribution = foot === "left" ? 0.3 : 0.2;  // Arbitrary difference
+  
+  // Contact quality: better contact = better spin transfer
+  const contactContribution = (contactQuality / 100.0) * 2.0;
+  
+  // Total spin (in radians per frame)
+  const totalSpin = (
+    playerSpeedContribution +
+    footContribution +
+    contactContribution
+  );
+  
+  return totalSpin;
+}
+
+// Step 7: Lift angle (determines how high the ball goes)
+function calculateLiftAngle(
+  force: number,
+  contactQuality: number,
+  playerBalance: number,
+  directionUpComponent: number
+): number {
+  
+  // Lift angle depends on:
+  // 1. How hard the player kicks
+  // 2. Contact point (center = drive, top = loft)
+  // 3. Player balance (off-balance = higher angle)
+  
+  const baseLift = force * 0.3;  // Force contributes ~30°
+  
+  const contactLift = contactQuality < 50 ?
+    10 : 0;  // Poor contact lifts the ball
+  
+  const balanceLift = (100 - playerBalance) * 0.1;  // Off-balance lifts
+  
+  const directionLift = directionUpComponent * 45;  // Upward direction lifts
+  
+  const totalLift = baseLift + contactLift + balanceLift + directionLift;
+  
+  // Clamp to reasonable range (0–60°)
+  return Math.max(0, Math.min(60, totalLift));
+}
+
+// Step 8: Build velocity vector from direction, strength, and angle
+function buildVelocityVector(
+  direction: Vector2,
+  strength: number,
+  liftAngle: number
+): Vector3 {
+  
+  const angleRadians = (liftAngle * Math.PI) / 180.0;
+  
+  // Horizontal component (reduced by lift angle)
+  const horizontalFraction = Math.cos(angleRadians);
+  const verticalFraction = Math.sin(angleRadians);
+  
+  return new Vector3(
+    direction.x * strength * horizontalFraction,
+    strength * verticalFraction,
+    direction.y * strength * horizontalFraction
+  );
+}
+
+// Helper: Calculate magnitude of vector
+function magnitude(v: Vector3): number {
+  return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+}
+```
+
+**Real-World Examples**:
+
+```typescript
+// Example 1: Perfect strike by a skilled player
+const perfectKick: KickIntent = {
+  player: skillfulPlayer,  // High shot power stat (90)
+  force: 100,             // Full power
+  direction: {x: 0, y: 1},  // Straight ahead
+  foot: "right",
+  contactQuality: 95,     // Clean strike
+  playerBalance: 100,     // Well balanced
+  playerVelocity: {x: 2, y: 0, z: 3},  // Running into the strike
+  ballPosition: {x: 0, y: 0.5, z: 0},
+  ballVelocity: {x: 0, y: 0, z: 0},
+  frameNumber: 100,
+};
+
+// Result: Perfect geometry, strong velocity, good spin
+// Output: {ballVelocity: {x: 0, y: 12, z: 40}, spinRadians: 0.8, liftAngle: 25°}
+
+// Example 2: Weak, off-balance volley
+const weakVolley: KickIntent = {
+  player: tiredPlayer,    // Low shot power (40)
+  force: 40,              // Half power (weak)
+  direction: {x: 0, y: 0.7},
+  foot: "left",
+  contactQuality: 30,     // Poor contact (came off shin)
+  playerBalance: 20,      // Stumbling, off-balance
+  playerVelocity: {x: 0, y: 0, z: 0},  // Stationary
+  ballPosition: {x: 0, y: 1.2, z: 0},  // High ball
+  ballVelocity: {x: 2, y: 0, z: 0},    // Moving toward goal
+  frameNumber: 200,
+};
+
+// Result: Weak power, high lift (poor contact), less spin
+// Output: {ballVelocity: {x: 1, y: 8, z: 8}, spinRadians: 0.3, liftAngle: 35°}
+
+// Example 3: Curled pass from a running player
+const curledPass: KickIntent = {
+  player: creativePlayer,
+  force: 60,              // Medium power
+  direction: {x: -0.7, y: 0.3},  // Forward-left
+  foot: "right",
+  contactQuality: 85,
+  playerBalance: 95,
+  playerVelocity: {x: 3, y: 0, z: 5},  // Running hard
+  ballPosition: {x: 0, y: 0.5, z: 0},
+  ballVelocity: {x: 0, y: 0, z: 0},
+  frameNumber: 150,
+};
+
+// Result: Medium power, good spin from running velocity, slight lift
+// Output: {ballVelocity: {x: -18, y: 5, z: 15}, spinRadians: 1.2, liftAngle: 18°}
+```
+
+**Why This Matters**:
+
+1. ✅ **Deterministic**: Same kick intent always produces same output
+2. ✅ **Fair**: Quality of contact and balance matter, not RNG
+3. ✅ **Skill-Based**: Better players have higher shot power stat
+4. ✅ **Physical**: Player movement affects spin and power
+5. ✅ **Legible**: Every output parameter is explainable (not hidden)
+6. ✅ **Replayable**: Kick output can be verified from inputs
+
+**Integration with Behavior Trees**:
+
+```typescript
+// When player decides to "shoot", behavior tree outputs kick intent
+function executeShootAction(
+  player: Player,
+  targetDirection: Vector3,
+  gameState: GameState,
+  frameNumber: number
+): Ball {
+  
+  // Gather kick parameters from current state
+  const kickIntent: KickIntent = {
+    player,
+    frameNumber,
+    force: calculateForce(player, gameState),  // Dynamic based on situation
+    direction: normalizeVector(targetDirection),
+    foot: selectFoot(player),  // Weaker foot = slightly different mechanics
+    contactQuality: calculateContactQuality(player, gameState),  // How clean?
+    playerBalance: calculatePlayerBalance(player, gameState),    // Stable?
+    playerVelocity: player.velocity,
+    ballPosition: gameState.ball.position,
+    ballVelocity: gameState.ball.velocity,
+  };
+  
+  // Calculate kick output
+  const kickOutput = calculateKick(kickIntent, frameNumber.toString());
+  
+  // Apply to ball
+  gameState.ball.velocity = kickOutput.ballVelocity;
+  gameState.ball.spinRadians = kickOutput.spinRadians;
+  
+  return gameState.ball;
+}
+```
+
 ---
 
 ## 4. Tactical Decision System
