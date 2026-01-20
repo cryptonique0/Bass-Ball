@@ -380,6 +380,59 @@ export const BASE_ECOSYSTEM = {
     },
   },
 
+  // Lending Protocols on Base
+  LENDING_PROTOCOLS: {
+    // Major Lending Protocols
+    AAVE_V3: {
+      name: 'Aave V3',
+      url: 'https://aave.com',
+      chainId: 8453,
+      type: 'Multi-Collateral Lending',
+      lendingPool: '0xA238dd5C0d5Fddf69B7b4d6A01b682e2dEeAE5C7',
+      dataProvider: '0x2d8A3C8677930C8Afd2b8BF4c2F4e8e5c8b7e6d5',
+      oracle: '0x2da00A6404C3C2169f1a470422b8998e1d803250',
+      tvl: '2000M+',
+      bestLendingAPY: '8-12%',
+      bestBorrowingAPY: '1-5%',
+      supportedAssets: ['ETH', 'USDC', 'USDT', 'DAI', 'AAVE', 'cbETH', 'wstETH'],
+      collateralAssets: ['ETH', 'USDC', 'USDT', 'DAI', 'AAVE', 'cbETH'],
+      riskLevel: 'Low',
+      supported: true,
+    },
+    COMPOUND_V3: {
+      name: 'Compound V3',
+      url: 'https://compound.finance',
+      chainId: 8453,
+      type: 'Lending Market',
+      comet: '0x46e6b214b524310e3C6dc6D81EB0d8edd336e0a6',
+      cometRewards: '0x045c4324039dA91c52C8caA5e8236e30686baCE7',
+      oracle: '0xBd39c5384817E7C14A21edf54B228695e521e7EC',
+      tvl: '800M+',
+      bestLendingAPY: '6-10%',
+      bestBorrowingAPY: '2-6%',
+      supportedAssets: ['USDC', 'ETH', 'WBTC'],
+      collateralAssets: ['USDC', 'ETH', 'WBTC', 'cbETH', 'USDbC'],
+      riskLevel: 'Low',
+      supported: true,
+    },
+    MORPHO: {
+      name: 'Morpho',
+      url: 'https://morpho.org',
+      chainId: 8453,
+      type: 'Optimized Lending',
+      morphoAave: '0xbbBB24d56e81e4C64f94b00cEae3965e0410Db29',
+      morphoCompound: '0x8Cc47A235d58dF25f14FB9c901A3e285298c4022',
+      rewards: '0x73873f50A761af4DFa89645d3294C31b41EFEaea',
+      tvl: '600M+',
+      bestLendingAPY: '10-15%',
+      bestBorrowingAPY: '1-3%',
+      supportedAssets: ['USDC', 'ETH', 'DAI', 'WBTC'],
+      collateralAssets: ['USDC', 'ETH', 'DAI', 'WBTC', 'cbETH'],
+      riskLevel: 'Medium',
+      supported: true,
+    },
+  },
+
   // Tokens
   TOKENS: {
     ETH: {
@@ -991,6 +1044,210 @@ export const convertEthereumToBaseValue = async (
 };
 
 // ============================================================================
+// LENDING PROTOCOLS UTILITIES
+// ============================================================================
+
+/**
+ * Get all lending protocols on Base
+ */
+export const getBaseLendingProtocols = (
+  options?: { type?: string; supported?: boolean }
+): Array<any> => {
+  let protocols = Object.values(BASE_ECOSYSTEM.LENDING_PROTOCOLS);
+
+  if (options?.type) {
+    protocols = protocols.filter(p => p.type === options.type);
+  }
+
+  if (options?.supported !== undefined) {
+    protocols = protocols.filter(p => p.supported === options.supported);
+  }
+
+  return protocols;
+};
+
+/**
+ * Get all lending protocol types
+ */
+export const getBaseLendingProtocolTypes = (): string[] => {
+  return [
+    ...new Set(Object.values(BASE_ECOSYSTEM.LENDING_PROTOCOLS).map(p => p.type)),
+  ];
+};
+
+/**
+ * Get lending protocols by type
+ */
+export const getLendingProtocolsByType = (type: string): Array<any> => {
+  return Object.values(BASE_ECOSYSTEM.LENDING_PROTOCOLS).filter(
+    p => p.type === type
+  );
+};
+
+/**
+ * Get Aave markets
+ */
+export const getBaseAaveMarkets = (): any => {
+  return BASE_ECOSYSTEM.LENDING_PROTOCOLS.AAVE_V3;
+};
+
+/**
+ * Get Compound markets
+ */
+export const getBaseCompoundMarkets = (): any => {
+  return BASE_ECOSYSTEM.LENDING_PROTOCOLS.COMPOUND_V3;
+};
+
+/**
+ * Get Morpho markets
+ */
+export const getBaseMorphoMarkets = (): any => {
+  return BASE_ECOSYSTEM.LENDING_PROTOCOLS.MORPHO;
+};
+
+/**
+ * Get highest lending APY across protocols
+ */
+export const getHighestLendingAPY = (
+  limit?: number
+): Array<{ protocol: string; apy: string; asset?: string }> => {
+  const protocols = Object.entries(BASE_ECOSYSTEM.LENDING_PROTOCOLS)
+    .map(([key, protocol]) => ({
+      protocol: protocol.name,
+      apy: protocol.bestLendingAPY,
+      tvl: protocol.tvl,
+    }))
+    .sort((a, b) => {
+      const aMax = parseInt(a.apy.split('-')[1]) || 0;
+      const bMax = parseInt(b.apy.split('-')[1]) || 0;
+      return bMax - aMax;
+    });
+
+  return limit ? protocols.slice(0, limit) : protocols;
+};
+
+/**
+ * Get highest borrowing APY across protocols
+ */
+export const getHighestBorrowingAPY = (
+  limit?: number
+): Array<{ protocol: string; apy: string }> => {
+  const protocols = Object.entries(BASE_ECOSYSTEM.LENDING_PROTOCOLS)
+    .map(([key, protocol]) => ({
+      protocol: protocol.name,
+      apy: protocol.bestBorrowingAPY,
+      tvl: protocol.tvl,
+    }))
+    .sort((a, b) => {
+      const aMin = parseInt(a.apy.split('-')[0]) || 0;
+      const bMin = parseInt(b.apy.split('-')[0]) || 0;
+      return aMin - bMin;
+    });
+
+  return limit ? protocols.slice(0, limit) : protocols;
+};
+
+/**
+ * Get lending protocol by ID
+ */
+export const getBaseLendingProtocolById = (
+  id: keyof typeof BASE_ECOSYSTEM.LENDING_PROTOCOLS
+): any => {
+  return BASE_ECOSYSTEM.LENDING_PROTOCOLS[id];
+};
+
+/**
+ * Check if lending protocol is supported
+ */
+export const isBaseLendingProtocolSupported = (
+  id: keyof typeof BASE_ECOSYSTEM.LENDING_PROTOCOLS
+): boolean => {
+  return BASE_ECOSYSTEM.LENDING_PROTOCOLS[id]?.supported || false;
+};
+
+/**
+ * Get lending protocols supporting specific asset
+ */
+export const getLendingProtocolsForAsset = (asset: string): Array<any> => {
+  return Object.values(BASE_ECOSYSTEM.LENDING_PROTOCOLS).filter(protocol =>
+    protocol.supportedAssets?.includes(asset)
+  );
+};
+
+/**
+ * Get lending protocols where asset can be used as collateral
+ */
+export const getCollateralProtocolsForAsset = (asset: string): Array<any> => {
+  return Object.values(BASE_ECOSYSTEM.LENDING_PROTOCOLS).filter(protocol =>
+    protocol.collateralAssets?.includes(asset)
+  );
+};
+
+/**
+ * Get total lending TVL across protocols
+ */
+export const getTotalBaseLendingTVL = (): {
+  total: string;
+  byProtocol: { [key: string]: string };
+  count: number;
+} => {
+  const protocols = Object.entries(BASE_ECOSYSTEM.LENDING_PROTOCOLS);
+  let totalTVL = 0;
+
+  const byProtocol: { [key: string]: string } = {};
+  protocols.forEach(([key, protocol]) => {
+    const tvlValue = parseInt(protocol.tvl.replace(/[^0-9]/g, '')) || 0;
+    totalTVL += tvlValue;
+    byProtocol[protocol.name] = protocol.tvl;
+  });
+
+  return {
+    total: `${totalTVL / 1000}B+`,
+    byProtocol,
+    count: protocols.length,
+  };
+};
+
+/**
+ * Calculate optimal lending strategy
+ */
+export const getOptimalLendingStrategy = (
+  asset: string,
+  priority: 'apy' | 'safety' | 'liquidity' = 'apy'
+): any => {
+  const protocols = getLendingProtocolsForAsset(asset);
+
+  if (priority === 'apy') {
+    return protocols.sort((a, b) => {
+      const aMax = parseInt(a.bestLendingAPY.split('-')[1]) || 0;
+      const bMax = parseInt(b.bestLendingAPY.split('-')[1]) || 0;
+      return bMax - aMax;
+    })[0];
+  } else if (priority === 'safety') {
+    return protocols.sort((a, b) => {
+      const riskOrder = { 'Low': 0, 'Medium': 1, 'High': 2 };
+      return (riskOrder[a.riskLevel as keyof typeof riskOrder] || 0) -
+             (riskOrder[b.riskLevel as keyof typeof riskOrder] || 0);
+    })[0];
+  } else {
+    return protocols.sort((a, b) => {
+      const aTVL = parseInt(a.tvl.replace(/[^0-9]/g, '')) || 0;
+      const bTVL = parseInt(b.tvl.replace(/[^0-9]/g, '')) || 0;
+      return bTVL - aTVL;
+    })[0];
+  }
+};
+
+/**
+ * Get lending protocol URL
+ */
+export const getLendingProtocolUrl = (
+  protocolId: keyof typeof BASE_ECOSYSTEM.LENDING_PROTOCOLS
+): string => {
+  return BASE_ECOSYSTEM.LENDING_PROTOCOLS[protocolId]?.url || '';
+};
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -1034,4 +1291,19 @@ export default {
   getSwapUrl,
   getBaseEcosystemHealth,
   convertEthereumToBaseValue,
+  getBaseLendingProtocols,
+  getBaseLendingProtocolTypes,
+  getLendingProtocolsByType,
+  getBaseAaveMarkets,
+  getBaseCompoundMarkets,
+  getBaseMorphoMarkets,
+  getHighestLendingAPY,
+  getHighestBorrowingAPY,
+  getBaseLendingProtocolById,
+  isBaseLendingProtocolSupported,
+  getLendingProtocolsForAsset,
+  getCollateralProtocolsForAsset,
+  getTotalBaseLendingTVL,
+  getOptimalLendingStrategy,
+  getLendingProtocolUrl,
 } as const;
