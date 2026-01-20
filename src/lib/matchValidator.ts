@@ -89,6 +89,61 @@ export interface ValidationResult {
 }
 
 /**
+ * Phase 7: NFT Bridge Integration
+ * NFT rewards and cross-chain transfer support for match results
+ */
+export enum NFTRewardType {
+  ACHIEVEMENT = 'achievement',
+  COSMETIC = 'cosmetic',
+  PLAYER_STATS = 'player-stats',
+  LIMITED_EDITION = 'limited-edition',
+}
+
+export interface NFTRewardEarned {
+  nftId: string;
+  type: NFTRewardType;
+  metadata: {
+    name: string;
+    description: string;
+    rarity: 'common' | 'rare' | 'epic' | 'legendary';
+    value: string; // In ETH
+    achievement?: string;
+  };
+  earnedAt: number;
+  chainId: number; // Chain where NFT was minted
+  contractAddress: string;
+  eligible: boolean; // Can be bridged cross-chain
+}
+
+export interface MatchNFTRewards {
+  matchId: string;
+  playerId: string;
+  rewards: NFTRewardEarned[];
+  totalValue: string; // In ETH
+  claimedAt?: number;
+  bridgeInfo?: {
+    protocol: 'wormhole' | 'stargate';
+    destChainId: number;
+    txHash?: string;
+    status: 'pending' | 'confirmed' | 'completed' | 'failed';
+    bridgedAt?: number;
+  };
+}
+
+export interface MatchBridgeTransaction {
+  txHash: string;
+  nftId: string;
+  fromChain: number;
+  toChain: number;
+  protocol: 'wormhole' | 'stargate';
+  status: 'pending' | 'confirmed' | 'finalized' | 'completed' | 'failed';
+  progress: number; // 0-100
+  estimatedCompletion?: number;
+  fee: string;
+  timestamp: number;
+}
+
+/**
  * Tick-based rate limiting rules
  * Prevents automated input spam and cheating
  */
