@@ -1,3 +1,5 @@
+/// <reference types="jest" />
+
 // Collision system unit tests
 // Comprehensive test suite for player-ball and player-player collisions
 
