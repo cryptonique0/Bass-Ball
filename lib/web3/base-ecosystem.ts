@@ -13,23 +13,235 @@ import { privateKeyToAccount } from 'viem/accounts';
 // ============================================================================
 
 export const BASE_ECOSYSTEM = {
-  // Bridges
+  // Bridges supporting Base Chain
   BRIDGES: {
+    // Native/Official Bridges
+    OPTIMISM: {
+      name: 'Optimism Bridge (Official)',
+      url: 'https://app.optimism.io/bridge',
+      chainId: 8453,
+      type: 'Native',
+      fee: 'Variable',
+      speed: 'Fast (7 days)',
+      supportedChains: [1, 5, 11155111],
+      supportedAssets: ['ETH', 'USDC', 'DAI', 'USDT'],
+      contract: '0x4200000000000000000000000000000000000010',
+      supported: true,
+    },
+    COINBASE_BRIDGE: {
+      name: 'Coinbase Bridge',
+      url: 'https://www.coinbase.com/wallet/bridge',
+      chainId: 8453,
+      type: 'Native',
+      fee: 'Low',
+      speed: 'Medium (1-2 minutes)',
+      supportedChains: [1, 137, 42161, 10, 8453],
+      supportedAssets: ['ETH', 'USDC', 'USDT'],
+      supported: true,
+    },
+
+    // Liquidity Pool Bridges
     STARGATE: {
       name: 'Stargate Finance',
       url: 'https://stargate.finance',
       chainId: 8453,
+      type: 'Liquidity Pool',
+      fee: 'Low (0.05-0.5%)',
+      speed: 'Fast (< 1 minute)',
       lzEndpoint: '0xb6319cC6c8c27A8F5dAF0DD3DF91EA35C4720dd7',
+      supportedChains: [1, 10, 56, 137, 250, 43114, 42161, 8453],
+      supportedAssets: ['USDC', 'USDT', 'ETH', 'SGETH'],
+      supported: true,
     },
     ACROSS: {
       name: 'Across Protocol',
       url: 'https://across.to',
       chainId: 8453,
+      type: 'Liquidity Pool',
+      fee: 'Low (0.1-0.5%)',
+      speed: 'Medium (2-10 minutes)',
+      spokePool: '0x6f26Bf09B1C792e3228e5467807a900A503c0281',
+      supportedChains: [1, 10, 137, 42161, 8453],
+      supportedAssets: ['USDC', 'USDT', 'ETH', 'DAI', 'USDC.e'],
+      supported: true,
     },
-    OPTIMISM: {
-      name: 'Optimism Bridge',
-      url: 'https://app.optimism.io/bridge',
+    SYNAPSE: {
+      name: 'Synapse Protocol',
+      url: 'https://synapseprotocol.com',
       chainId: 8453,
+      type: 'Liquidity Pool',
+      fee: 'Low (0.3-0.5%)',
+      speed: 'Medium (1-3 minutes)',
+      router: '0xb2C3A7DE182e584009e6Bff2FB285b0aB6e6ba6c',
+      supportedChains: [1, 43114, 250, 137, 56, 42161, 10, 8453],
+      supportedAssets: ['nUSD', 'USDC', 'USDT', 'ETH', 'DAI'],
+      supported: true,
+    },
+    CONNEXT: {
+      name: 'Connext',
+      url: 'https://connext.network',
+      chainId: 8453,
+      type: 'Liquidity Pool',
+      fee: 'Variable',
+      speed: 'Fast (< 5 minutes)',
+      router: '0xEE9deC2712cCE65f1B7C3860Ab200A4f8CB4c68d',
+      supportedChains: [1, 137, 250, 42161, 10, 8453],
+      supportedAssets: ['USDC', 'USDT', 'DAI', 'FRAX'],
+      supported: true,
+    },
+    HOP: {
+      name: 'Hop Protocol',
+      url: 'https://hop.exchange',
+      chainId: 8453,
+      type: 'Liquidity Pool',
+      fee: 'Low (0.25-0.5%)',
+      speed: 'Medium (2-5 minutes)',
+      amm: '0xe7F40Bf16AB2824C97c1b6250C30a7E27fD20DA7',
+      supportedChains: [1, 42161, 10, 137, 8453],
+      supportedAssets: ['USDC', 'DAI', 'USDT', 'ETH', 'MATIC'],
+      supported: true,
+    },
+    HYPHEN: {
+      name: 'Hyphen (Biconomy)',
+      url: 'https://hyphen.biconomy.io',
+      chainId: 8453,
+      type: 'Liquidity Pool',
+      fee: 'Low (0.1-0.5%)',
+      speed: 'Fast (30 seconds - 5 minutes)',
+      router: '0x2A0987090EfB8060f45f085DbbA1e2C96a1d1e18',
+      supportedChains: [1, 137, 56, 43114, 250, 42161, 10, 8453],
+      supportedAssets: ['USDC', 'USDT', 'DAI'],
+      supported: true,
+    },
+
+    // Wrapped/Portal Bridges
+    WORMHOLE: {
+      name: 'Wormhole (Portal)',
+      url: 'https://www.portalbridge.com',
+      chainId: 8453,
+      type: 'Wrapped Asset',
+      fee: 'Low (+ relayer)',
+      speed: 'Medium (5-15 minutes)',
+      wormholeCore: '0x7Cd28fCe5162e4A82ca123Df63B518e06F2cF6eE',
+      supportedChains: [1, 8, 14, 21, 5, 6, 7, 10, 12, 13, 16, 17, 18, 23, 24, 25, 28, 30],
+      supportedAssets: ['USDC', 'USDT', 'ETH', 'WETH', 'DAI'],
+      supported: true,
+    },
+    MULTICHAIN: {
+      name: 'Multichain (Anyswap)',
+      url: 'https://multichain.org',
+      chainId: 8453,
+      type: 'Wrapped Asset',
+      fee: 'Variable',
+      speed: 'Medium (5-20 minutes)',
+      supportedChains: [1, 56, 137, 250, 43114, 42161, 10, 8453, 100],
+      supportedAssets: ['USDC', 'USDT', 'ETH', 'DAI', 'AAVE'],
+      supported: true,
+    },
+    RAINBOW: {
+      name: 'Rainbow Bridge',
+      url: 'https://rainbowbridge.app',
+      chainId: 8453,
+      type: 'Wrapped Asset',
+      fee: 'Low',
+      speed: 'Medium (10-30 minutes)',
+      supportedChains: [1, 42161, 10, 137, 8453],
+      supportedAssets: ['NEAR', 'ETH', 'USDC'],
+      supported: true,
+    },
+
+    // Swap-based Bridges
+    LIFI: {
+      name: 'LiFi (DEX Aggregator Bridge)',
+      url: 'https://li.fi',
+      chainId: 8453,
+      type: 'DEX Aggregator',
+      fee: 'Protocol fees apply',
+      speed: 'Medium (varies)',
+      supportedChains: [1, 56, 137, 250, 43114, 42161, 10, 8453, 100],
+      supportedAssets: ['Any ERC-20'],
+      supported: true,
+    },
+    RANGO: {
+      name: 'Rango Exchange',
+      url: 'https://rango.exchange',
+      chainId: 8453,
+      type: 'DEX Aggregator',
+      fee: 'Protocol fees apply',
+      speed: 'Medium (varies)',
+      supportedChains: [1, 56, 137, 250, 43114, 42161, 10, 8453],
+      supportedAssets: ['Any ERC-20'],
+      supported: true,
+    },
+
+    // Sidechain Bridges
+    ARBITRUM: {
+      name: 'Arbitrum to Base Bridge',
+      url: 'https://bridge.arbitrum.io',
+      chainId: 8453,
+      type: 'Cross-L2',
+      fee: 'Low',
+      speed: 'Fast (< 5 minutes)',
+      supportedChains: [1, 42161, 8453],
+      supportedAssets: ['ETH', 'USDC', 'USDT', 'WBTC'],
+      supported: true,
+    },
+    POLYGON: {
+      name: 'Polygon to Base Bridge',
+      url: 'https://wallet.polygon.technology/bridge',
+      chainId: 8453,
+      type: 'Cross-L2',
+      fee: 'Variable',
+      speed: 'Medium (5-10 minutes)',
+      supportedChains: [1, 137, 8453],
+      supportedAssets: ['USDC', 'USDT', 'ETH'],
+      supported: true,
+    },
+    AVALANCHE: {
+      name: 'Avalanche to Base Bridge',
+      url: 'https://bridge.avax.network',
+      chainId: 8453,
+      type: 'Cross-L2',
+      fee: 'Variable',
+      speed: 'Medium (5-15 minutes)',
+      supportedChains: [1, 43114, 8453],
+      supportedAssets: ['USDC', 'ETH', 'WAVAX'],
+      supported: true,
+    },
+
+    // Additional Bridges
+    SOCKET: {
+      name: 'Socket Gateway',
+      url: 'https://socket.tech',
+      chainId: 8453,
+      type: 'Bridge Aggregator',
+      fee: 'Low',
+      speed: 'Optimized',
+      supportedChains: [1, 56, 137, 250, 43114, 42161, 10, 8453, 100],
+      supportedAssets: ['Any ERC-20'],
+      supported: true,
+    },
+    ORBITER: {
+      name: 'Orbiter Finance',
+      url: 'https://www.orbiter.finance',
+      chainId: 8453,
+      type: 'Liquidity Pool',
+      fee: 'Low (0.2-0.5%)',
+      speed: 'Fast (5-30 minutes)',
+      supportedChains: [1, 137, 56, 43114, 42161, 10, 8453],
+      supportedAssets: ['ETH', 'USDC', 'USDT', 'DAI'],
+      supported: true,
+    },
+    CELER: {
+      name: 'Celer cBridge',
+      url: 'https://cbridge.celer.network',
+      chainId: 8453,
+      type: 'Liquidity Pool',
+      fee: 'Variable',
+      speed: 'Medium (5-15 minutes)',
+      supportedChains: [1, 56, 137, 250, 43114, 42161, 10, 8453, 100, 1313161554],
+      supportedAssets: ['USDC', 'USDT', 'DAI', 'ETH'],
+      supported: true,
     },
   },
 
@@ -384,11 +596,24 @@ export const calculateBaseSavings = (l1GasPrice: number, txComplexity: 'simple' 
 /**
  * Get Base ecosystem bridges info
  */
-export const getBaseBridges = () => {
-  return Object.entries(BASE_ECOSYSTEM.BRIDGES).map(([key, bridge]) => ({
-    id: key,
-    ...bridge,
-  }));
+export const getBaseBridges = (filter?: { type?: string; supported?: boolean }) => {
+  return Object.entries(BASE_ECOSYSTEM.BRIDGES)
+    .map(([key, bridge]) => ({
+      id: key,
+      ...bridge,
+    }))
+    .filter(bridge => {
+      if (filter?.type && bridge.type !== filter.type) return false;
+      if (filter?.supported !== undefined && bridge.supported !== filter.supported) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by speed preference
+      const speedOrder = { 'Fast (< 1 minute)': 0, 'Fast (< 5 minutes)': 1, 'Medium': 2, 'Slow': 3 };
+      const aSpeed = Object.entries(speedOrder).find(([key]) => a.speed?.includes(key.split('(')[0].trim()))?.[1] ?? 999;
+      const bSpeed = Object.entries(speedOrder).find(([key]) => b.speed?.includes(key.split('(')[0].trim()))?.[1] ?? 999;
+      return aSpeed - bSpeed;
+    });
 };
 
 /**
@@ -523,6 +748,138 @@ export const getTotalBaseDexTVL = (): { totalTVL: string; dexCount: number } => 
   return {
     totalTVL: `${totalTvl}M+`,
     dexCount: dexs.length,
+  };
+};
+
+/**
+ * Get all bridge types available on Base
+ */
+export const getBaseBridgeTypes = (): string[] => {
+  const types = new Set<string>();
+  Object.values(BASE_ECOSYSTEM.BRIDGES).forEach(bridge => {
+    if (bridge.type) types.add(bridge.type);
+  });
+  return Array.from(types);
+};
+
+/**
+ * Get bridges by type (e.g., 'Native', 'Liquidity Pool', 'Wrapped Asset', etc.)
+ */
+export const getBridgesByType = (type: string) => {
+  return getBaseBridges({ type });
+};
+
+/**
+ * Get all native/official bridges on Base
+ */
+export const getBaseNativeBridges = () => {
+  return getBaseBridges({ type: 'Native' });
+};
+
+/**
+ * Get all liquidity pool bridges on Base
+ */
+export const getBaseLiquidityBridges = () => {
+  return getBaseBridges({ type: 'Liquidity Pool' });
+};
+
+/**
+ * Get all wrapped asset bridges on Base
+ */
+export const getBaseWrappedBridges = () => {
+  return getBaseBridges({ type: 'Wrapped Asset' });
+};
+
+/**
+ * Get all DEX aggregator bridges on Base
+ */
+export const getBaseDexBridges = () => {
+  return getBaseBridges({ type: 'DEX Aggregator' });
+};
+
+/**
+ * Get fastest bridges on Base
+ */
+export const getFastestBridges = (limit: number = 5) => {
+  return getBaseBridges()
+    .filter(b => b.speed?.includes('Fast'))
+    .slice(0, limit);
+};
+
+/**
+ * Get cheapest bridges on Base (by fee)
+ */
+export const getCheapestBridges = (limit: number = 5) => {
+  return getBaseBridges()
+    .filter(b => b.fee?.includes('Low'))
+    .slice(0, limit);
+};
+
+/**
+ * Get bridge by ID
+ */
+export const getBaseBridgeById = (id: string) => {
+  const bridgeKey = id.toUpperCase() as keyof typeof BASE_ECOSYSTEM.BRIDGES;
+  const bridge = BASE_ECOSYSTEM.BRIDGES[bridgeKey];
+  if (!bridge) {
+    throw new Error(`Bridge ${id} not found on Base`);
+  }
+  return {
+    id: bridgeKey,
+    ...bridge,
+  };
+};
+
+/**
+ * Check if bridge is supported
+ */
+export const isBaseBridgeSupported = (bridgeId: string): boolean => {
+  try {
+    const bridge = getBaseBridgeById(bridgeId);
+    return bridge.supported === true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Get bridges supporting specific asset
+ */
+export const getBridgesForAsset = (asset: string): any[] => {
+  return getBaseBridges()
+    .filter(bridge => 
+      bridge.supportedAssets && 
+      bridge.supportedAssets.some(a => a.toUpperCase() === asset.toUpperCase() || a === 'Any ERC-20')
+    );
+};
+
+/**
+ * Get bridges supporting specific source chain
+ */
+export const getBridgesFromChain = (chainId: number): any[] => {
+  return getBaseBridges()
+    .filter(bridge => 
+      bridge.supportedChains && 
+      bridge.supportedChains.includes(chainId)
+    );
+};
+
+/**
+ * Get total number of supported bridges
+ */
+export const getTotalBaseBridges = (): { total: number; byType: Record<string, number> } => {
+  const bridges = getBaseBridges();
+  const byType: Record<string, number> = {};
+  
+  bridges.forEach(bridge => {
+    if (bridge.type) {
+      byType[bridge.type] = (byType[bridge.type] || 0) + 1;
+    }
+  });
+
+  return {
+    total: bridges.length,
+    byType,
   };
 };
 
