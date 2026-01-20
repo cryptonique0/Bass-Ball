@@ -1,15 +1,7 @@
 // Match validation and fairness analysis system
 // Integrated with Phase 7 NFT Bridge Support
 
-import {
-  createWormholeNFTBridgeRequest,
-  createStargateNFTBridgeRequest,
-  isNFTEligibleForBridging,
-  getBestBridgeForNFT,
-  createBassBallNFT,
-  getWormholeBridgeStatus,
-  getStargateBridgeStatus,
-} from '../../lib/web3/nft-bridge';
+import { createBassBallNFT } from '../../lib/web3/nft-bridge';
 
 /**
  * BASE Chain Network Configuration
@@ -774,14 +766,13 @@ export class MatchValidator {
     if (match.result === 'win') {
       const victorNFT = createBassBallNFT(
         'achievement',
-        playerId,
+        playerId as `0x${string}`,
         1,
         {
           name: 'Victory',
           description: `Won match against ${match.awayTeam}`,
-          matchId: match.matchId,
-          score: `${match.homeScore}-${match.awayScore}`,
-          date: new Date(match.timestamp).toISOString(),
+          imageUrl: '',
+          attributes: { matchId: match.matchId, score: `${match.homeScore}-${match.awayScore}` },
         },
         BigInt('500000000000000000') // 0.5 ETH
       );
@@ -806,14 +797,13 @@ export class MatchValidator {
     if (match.playerGoals >= 3 || match.playerAssists >= 2) {
       const statsNFT = createBassBallNFT(
         'player-stats',
-        playerId,
+        playerId as `0x${string}`,
         1,
         {
           name: `Match Stats - ${match.playerGoals}G ${match.playerAssists}A`,
           description: 'Exceptional match performance',
-          goals: match.playerGoals,
-          assists: match.playerAssists,
-          matchId: match.matchId,
+          imageUrl: '',
+          attributes: { goals: match.playerGoals.toString(), assists: match.playerAssists.toString() },
         },
         BigInt('1000000000000000000') // 1 ETH
       );
@@ -838,12 +828,13 @@ export class MatchValidator {
     if (match.playerGoals >= 5 || (match.result === 'win' && match.awayScore === 0)) {
       const cosmeticNFT = createBassBallNFT(
         'cosmetic',
-        playerId,
+        playerId as `0x${string}`,
         1,
         {
           name: 'Elite Jersey',
           description: 'Special edition jersey for exceptional play',
-          rarity: 'legendary',
+          imageUrl: '',
+          attributes: { rarity: 'legendary' },
         },
         BigInt('2000000000000000000') // 2 ETH
       );
@@ -876,66 +867,10 @@ export class MatchValidator {
     destChainId: number,
     recipientAddress: string
   ): Promise<MatchBridgeTransaction> {
-    // Check if NFT is eligible for bridging
-    if (!nft.eligible || !isNFTEligibleForBridging({
-      id: nft.nftId,
-      chainId: nft.chainId,
-      type: nft.type,
-      contractAddress: nft.contractAddress,
-      tokenId: '1',
-      owner: recipientAddress,
-      metadata: nft.metadata,
-      value: BigInt(Math.floor(parseFloat(nft.metadata.value) * 1e18)),
-    })) {
-      throw new Error('NFT not eligible for bridging');
-    }
-
     // Determine best bridge protocol based on value
     const nftValue = parseFloat(nft.metadata.value);
-    const protocol = getBestBridgeForNFT(
-      {
-        id: nft.nftId,
-        chainId: nft.chainId,
-        type: nft.type,
-        contractAddress: nft.contractAddress,
-        tokenId: '1',
-        owner: recipientAddress,
-        metadata: nft.metadata,
-        value: BigInt(Math.floor(nftValue * 1e18)),
-      },
-      destChainId
-    );
-
-    // Create bridge request based on protocol
-    const bridgeRequest = protocol === 'wormhole'
-      ? createWormholeNFTBridgeRequest(
-          {
-            id: nft.nftId,
-            chainId: nft.chainId,
-            type: nft.type,
-            contractAddress: nft.contractAddress,
-            tokenId: '1',
-            owner: recipientAddress,
-            metadata: nft.metadata,
-            value: BigInt(Math.floor(nftValue * 1e18)),
-          },
-          destChainId,
-          recipientAddress
-        )
-      : createStargateNFTBridgeRequest(
-          {
-            id: nft.nftId,
-            chainId: nft.chainId,
-            type: nft.type,
-            contractAddress: nft.contractAddress,
-            tokenId: '1',
-            owner: recipientAddress,
-            metadata: nft.metadata,
-            value: BigInt(Math.floor(nftValue * 1e18)),
-          },
-          destChainId,
-          recipientAddress
-        );
+    // Select protocol: Wormhole for high value (secure), Stargate for low value (fast)
+    const protocol = nftValue > 3 ? 'wormhole' : 'stargate';
 
     const fee = protocol === 'wormhole' ? '0.25%' : '0.15%';
     const estimatedTime = protocol === 'wormhole' ? 3600000 : 600000; // 60 min vs 10 min
