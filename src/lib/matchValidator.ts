@@ -9,7 +9,7 @@ import {
   createBassBallNFT,
   getWormholeBridgeStatus,
   getStargateBridgeStatus,
-} from '../lib/web3/nft-bridge';
+} from '../../lib/web3/nft-bridge';
 
 /**
  * BASE Chain Network Configuration
