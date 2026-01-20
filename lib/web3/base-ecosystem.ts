@@ -1317,6 +1317,257 @@ export const getLendingProtocolUrl = (
 };
 
 // ============================================================================
+// STAKING & YIELD PROTOCOLS UTILITIES
+// ============================================================================
+
+/**
+ * Get all staking protocols
+ */
+export const getBaseStakingProtocols = (
+  options?: { type?: string; supported?: boolean }
+): Array<any> => {
+  let protocols = Object.values(BASE_ECOSYSTEM.STAKING_PROTOCOLS);
+
+  if (options?.type) {
+    protocols = protocols.filter(p => p.type === options.type);
+  }
+
+  if (options?.supported !== undefined) {
+    protocols = protocols.filter(p => p.supported === options.supported);
+  }
+
+  return protocols;
+};
+
+/**
+ * Get all staking protocol types
+ */
+export const getBaseStakingProtocolTypes = (): string[] => {
+  return [
+    ...new Set(Object.values(BASE_ECOSYSTEM.STAKING_PROTOCOLS).map(p => p.type)),
+  ];
+};
+
+/**
+ * Get staking protocols by type
+ */
+export const getStakingProtocolsByType = (type: string): Array<any> => {
+  return Object.values(BASE_ECOSYSTEM.STAKING_PROTOCOLS).filter(
+    p => p.type === type
+  );
+};
+
+/**
+ * Get ETH staking options
+ */
+export const getBaseETHStakingOptions = (): Array<any> => {
+  return Object.values(BASE_ECOSYSTEM.STAKING_PROTOCOLS).filter(
+    p => p.type === 'ETH Staking' || p.type === 'Decentralized ETH Staking'
+  );
+};
+
+/**
+ * Get Balancer yield optimization (Aura)
+ */
+export const getBaseBalancerYield = (): any => {
+  return BASE_ECOSYSTEM.STAKING_PROTOCOLS.AURA_FINANCE;
+};
+
+/**
+ * Get Curve yield optimization (Convex)
+ */
+export const getBaseCurveYield = (): any => {
+  return BASE_ECOSYSTEM.STAKING_PROTOCOLS.CONVEX;
+};
+
+/**
+ * Get highest staking APY across protocols
+ */
+export const getHighestStakingAPY = (
+  limit?: number
+): Array<{ protocol: string; apy: string; tvl: string }> => {
+  const protocols = Object.entries(BASE_ECOSYSTEM.STAKING_PROTOCOLS)
+    .map(([key, protocol]) => ({
+      protocol: protocol.name,
+      apy: protocol.apyEstimate,
+      tvl: protocol.tvl,
+      type: protocol.type,
+    }))
+    .sort((a, b) => {
+      const aMax = parseInt(a.apy.split('-')[1]) || 0;
+      const bMax = parseInt(b.apy.split('-')[1]) || 0;
+      return bMax - aMax;
+    });
+
+  return limit ? protocols.slice(0, limit) : protocols;
+};
+
+/**
+ * Get staking protocol by ID
+ */
+export const getBaseStakingProtocolById = (
+  id: keyof typeof BASE_ECOSYSTEM.STAKING_PROTOCOLS
+): any => {
+  return BASE_ECOSYSTEM.STAKING_PROTOCOLS[id];
+};
+
+/**
+ * Check if staking protocol is supported
+ */
+export const isBaseStakingProtocolSupported = (
+  id: keyof typeof BASE_ECOSYSTEM.STAKING_PROTOCOLS
+): boolean => {
+  return BASE_ECOSYSTEM.STAKING_PROTOCOLS[id]?.supported || false;
+};
+
+/**
+ * Get lowest risk staking options
+ */
+export const getLowRiskStakingOptions = (): Array<any> => {
+  return Object.values(BASE_ECOSYSTEM.STAKING_PROTOCOLS)
+    .filter(p => p.riskLevel === 'Low' || p.riskLevel === 'Low-Medium')
+    .sort((a, b) => {
+      const aMax = parseInt(a.apyEstimate.split('-')[1]) || 0;
+      const bMax = parseInt(b.apyEstimate.split('-')[1]) || 0;
+      return bMax - aMax;
+    });
+};
+
+/**
+ * Get high yield staking options
+ */
+export const getHighYieldStakingOptions = (
+  limit?: number
+): Array<any> => {
+  const protocols = Object.values(BASE_ECOSYSTEM.STAKING_PROTOCOLS)
+    .sort((a, b) => {
+      const aMax = parseInt(a.apyEstimate.split('-')[1]) || 0;
+      const bMax = parseInt(b.apyEstimate.split('-')[1]) || 0;
+      return bMax - aMax;
+    });
+
+  return limit ? protocols.slice(0, limit) : protocols;
+};
+
+/**
+ * Get staking protocols by minimum stake requirement
+ */
+export const getStakingProtocolsByMinStake = (
+  maxMinStake: number
+): Array<any> => {
+  return Object.values(BASE_ECOSYSTEM.STAKING_PROTOCOLS).filter(protocol => {
+    const minStr = protocol.minStake.toLowerCase();
+    if (minStr === 'no minimum') return true;
+    const minValue = parseFloat(minStr.split(' ')[0]);
+    return minValue <= maxMinStake;
+  });
+};
+
+/**
+ * Get total staking TVL across protocols
+ */
+export const getTotalBaseStakingTVL = (): {
+  total: string;
+  byProtocol: { [key: string]: string };
+  count: number;
+  byType: { [key: string]: string };
+} => {
+  const protocols = Object.entries(BASE_ECOSYSTEM.STAKING_PROTOCOLS);
+  let totalTVL = 0;
+
+  const byProtocol: { [key: string]: string } = {};
+  const byType: { [key: string]: string } = {};
+
+  protocols.forEach(([key, protocol]) => {
+    const tvlValue = parseInt(protocol.tvl.replace(/[^0-9]/g, '')) || 0;
+    totalTVL += tvlValue;
+    byProtocol[protocol.name] = protocol.tvl;
+
+    const type = protocol.type;
+    if (!byType[type]) {
+      byType[type] = '0B+';
+    }
+    const typeValue = parseInt(byType[type].replace(/[^0-9]/g, '')) || 0;
+    byType[type] = `${typeValue + tvlValue}B+`;
+  });
+
+  return {
+    total: `${totalTVL / 1000}B+`,
+    byProtocol,
+    count: protocols.length,
+    byType,
+  };
+};
+
+/**
+ * Estimate yield from staking amount
+ */
+export const estimateStakingYield = (
+  protocolId: keyof typeof BASE_ECOSYSTEM.STAKING_PROTOCOLS,
+  amount: number,
+  yearsToProject: number = 1
+): { annualYield: number; totalProjected: number; apy: string } => {
+  const protocol = BASE_ECOSYSTEM.STAKING_PROTOCOLS[protocolId];
+  if (!protocol) return { annualYield: 0, totalProjected: 0, apy: '0%' };
+
+  const apyMin = parseInt(protocol.apyEstimate.split('-')[0]) || 0;
+  const apyMax = parseInt(protocol.apyEstimate.split('-')[1]) || 0;
+  const apyAvg = (apyMin + apyMax) / 2 / 100;
+
+  const annualYield = amount * apyAvg;
+  const totalProjected = amount * Math.pow(1 + apyAvg, yearsToProject);
+
+  return {
+    annualYield: Math.round(annualYield * 100) / 100,
+    totalProjected: Math.round(totalProjected * 100) / 100,
+    apy: protocol.apyEstimate,
+  };
+};
+
+/**
+ * Compare staking protocols for specific criteria
+ */
+export const getOptimalStakingStrategy = (
+  priority: 'yield' | 'safety' | 'liquidity' = 'yield'
+): any => {
+  const protocols = Object.values(BASE_ECOSYSTEM.STAKING_PROTOCOLS);
+
+  if (priority === 'yield') {
+    return protocols.sort((a, b) => {
+      const aMax = parseInt(a.apyEstimate.split('-')[1]) || 0;
+      const bMax = parseInt(b.apyEstimate.split('-')[1]) || 0;
+      return bMax - aMax;
+    })[0];
+  } else if (priority === 'safety') {
+    return protocols.sort((a, b) => {
+      const riskOrder = { 'Low': 0, 'Low-Medium': 1, 'Medium': 2, 'High': 3 };
+      return (riskOrder[a.riskLevel as keyof typeof riskOrder] || 3) -
+             (riskOrder[b.riskLevel as keyof typeof riskOrder] || 3);
+    })[0];
+  } else {
+    // Liquidity = shortest withdrawal time
+    const timeOrder: { [key: string]: number } = {
+      'Liquid': 0,
+      '7 days': 1,
+      '16 days': 2,
+    };
+    return protocols.sort((a, b) => {
+      return (timeOrder[a.withdrawalTime] || 999) -
+             (timeOrder[b.withdrawalTime] || 999);
+    })[0];
+  }
+};
+
+/**
+ * Get staking protocol URL
+ */
+export const getStakingProtocolUrl = (
+  protocolId: keyof typeof BASE_ECOSYSTEM.STAKING_PROTOCOLS
+): string => {
+  return BASE_ECOSYSTEM.STAKING_PROTOCOLS[protocolId]?.url || '';
+};
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -1375,4 +1626,20 @@ export default {
   getTotalBaseLendingTVL,
   getOptimalLendingStrategy,
   getLendingProtocolUrl,
+  getBaseStakingProtocols,
+  getBaseStakingProtocolTypes,
+  getStakingProtocolsByType,
+  getBaseETHStakingOptions,
+  getBaseBalancerYield,
+  getBaseCurveYield,
+  getHighestStakingAPY,
+  getBaseStakingProtocolById,
+  isBaseStakingProtocolSupported,
+  getLowRiskStakingOptions,
+  getHighYieldStakingOptions,
+  getStakingProtocolsByMinStake,
+  getTotalBaseStakingTVL,
+  estimateStakingYield,
+  getOptimalStakingStrategy,
+  getStakingProtocolUrl,
 } as const;
