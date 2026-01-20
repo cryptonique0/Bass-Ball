@@ -35,19 +35,136 @@ export const BASE_ECOSYSTEM = {
 
   // DEXs on Base
   DEXS: {
+    // AMM DEXs
     UNISWAP_V3: {
       name: 'Uniswap V3',
+      url: 'https://app.uniswap.org',
       router: '0x2626664c2b8576550740a7c3e8d93b44fdf31e32',
       factory: '0x33128a8fC17869897dcE68Ed026d694621f6FDaD',
+      type: 'AMM',
+      tvl: '450M+',
+      volume24h: '80M+',
+      supported: true,
     },
     AERODROME: {
       name: 'Aerodrome Finance',
+      url: 'https://aerodrome.finance',
       router: '0xcF77a3Ba9A5CA922fB7c40eb8D5039056eA385B8',
       factory: '0x420DD5456806D6347BB051413C6F13EFAd94da20',
+      type: 'Velodrome Fork',
+      tvl: '200M+',
+      volume24h: '40M+',
+      supported: true,
     },
     PANCAKESWAP_V3: {
       name: 'PancakeSwap V3',
+      url: 'https://pancakeswap.finance',
       router: '0x1b81D678ffb9C0263b24A97847620C99d213eB14',
+      factory: '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865',
+      type: 'AMM',
+      tvl: '150M+',
+      volume24h: '30M+',
+      supported: true,
+    },
+    CURVE_FINANCE: {
+      name: 'Curve Finance',
+      url: 'https://curve.fi',
+      router: '0x0c59d36b23f809f8b6C674E3E1B53CaAdc1d5d1a',
+      factory: '0xF18056Bbd320E96A48e3519423d0aE4E2f47a6c0',
+      type: 'Stablecoin DEX',
+      tvl: '100M+',
+      volume24h: '20M+',
+      supported: true,
+    },
+    BALANCER: {
+      name: 'Balancer',
+      url: 'https://balancer.fi',
+      router: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+      factory: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+      type: 'Liquidity Pools',
+      tvl: '80M+',
+      volume24h: '15M+',
+      supported: true,
+    },
+    YUPPY_SWAP: {
+      name: 'Yuppy Swap',
+      url: 'https://yuppy.io',
+      router: '0xC4D6f8f2aa8dA9A6F1b5E9b3e1f0f8d3b9a8c7d6',
+      type: 'DEX Aggregator',
+      tvl: '50M+',
+      volume24h: '10M+',
+      supported: true,
+    },
+    THRUSTER: {
+      name: 'Thruster',
+      url: 'https://thruster.finance',
+      router: '0x98994a9A7b2788990C78f11A3470bB50586cE1d2',
+      factory: '0x2E2E80a5A4A6fb905e7b7eF99fE95c58c8D8BC54',
+      type: 'DEX',
+      tvl: '60M+',
+      volume24h: '12M+',
+      supported: true,
+    },
+    ALIEN_BASE: {
+      name: 'Alien Base',
+      url: 'https://alienbase.xyz',
+      router: '0x8cFe327CfF474E41eFFE1A9a22f917CFFaEd379B',
+      type: 'DEX',
+      tvl: '40M+',
+      volume24h: '8M+',
+      supported: true,
+    },
+    MOONSWAP: {
+      name: 'MoonSwap',
+      url: 'https://moonswap.io',
+      router: '0x18556DA3B851Dff6e1f14e0F7c8e0e3e8e2c6b4d',
+      type: 'AMM',
+      tvl: '30M+',
+      volume24h: '5M+',
+      supported: true,
+    },
+    METAMASK_SWAP: {
+      name: 'MetaMask Swap',
+      url: 'https://metamask.io/swaps',
+      type: 'DEX Aggregator',
+      tvl: 'N/A',
+      volume24h: 'N/A',
+      supported: true,
+    },
+    ONE_INCH: {
+      name: '1inch',
+      url: 'https://1inch.io',
+      type: 'DEX Aggregator',
+      tvl: 'N/A',
+      volume24h: 'N/A',
+      supported: true,
+    },
+    COWSWAP: {
+      name: 'CoW Swap',
+      url: 'https://cow.fi',
+      type: 'Intent DEX',
+      tvl: '25M+',
+      volume24h: '5M+',
+      supported: true,
+    },
+    // Specialized DEXs
+    SYNTHETIX: {
+      name: 'Synthetix',
+      url: 'https://synthetix.io',
+      router: '0x1b81D678ffb9C0263b24A97847620C99d213eB14',
+      type: 'Synthetic Assets',
+      tvl: '20M+',
+      volume24h: '3M+',
+      supported: true,
+    },
+    VELODROME_FORK: {
+      name: 'Velodrome Base Fork',
+      url: 'https://velodrome.finance',
+      router: '0x6Fc6F4B7f0D58d5C78cf6e7eC5FE0a0c8e2b8f7d',
+      type: 'Velodrome Fork',
+      tvl: '70M+',
+      volume24h: '14M+',
+      supported: true,
     },
   },
 
@@ -277,11 +394,23 @@ export const getBaseBridges = () => {
 /**
  * Get Base DEX info
  */
-export const getBaseDexs = () => {
-  return Object.entries(BASE_ECOSYSTEM.DEXS).map(([key, dex]) => ({
-    id: key,
-    ...dex,
-  }));
+export const getBaseDexs = (filter?: { type?: string; supported?: boolean }) => {
+  return Object.entries(BASE_ECOSYSTEM.DEXS)
+    .map(([key, dex]) => ({
+      id: key,
+      ...dex,
+    }))
+    .filter(dex => {
+      if (filter?.type && dex.type !== filter.type) return false;
+      if (filter?.supported !== undefined && dex.supported !== filter.supported) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by TVL if available
+      const aTvl = parseInt(a.tvl?.replace(/[M+]/g, '') || '0');
+      const bTvl = parseInt(b.tvl?.replace(/[M+]/g, '') || '0');
+      return bTvl - aTvl;
+    });
 };
 
 /**
@@ -292,6 +421,109 @@ export const getBaseServices = () => {
     id: key,
     ...service,
   }));
+};
+
+/**
+ * Get all DEX types available on Base
+ */
+export const getBaseDexTypes = (): string[] => {
+  const types = new Set<string>();
+  Object.values(BASE_ECOSYSTEM.DEXS).forEach(dex => {
+    if (dex.type) types.add(dex.type);
+  });
+  return Array.from(types);
+};
+
+/**
+ * Get DEXs by type (e.g., 'AMM', 'DEX Aggregator', etc.)
+ */
+export const getDexsByType = (type: string) => {
+  return getBaseDexs({ type });
+};
+
+/**
+ * Get all AMM DEXs on Base
+ */
+export const getBaseAMMs = () => {
+  return getBaseDexs({ type: 'AMM' });
+};
+
+/**
+ * Get all DEX aggregators on Base
+ */
+export const getBaseDexAggregators = () => {
+  return getBaseDexs({ type: 'DEX Aggregator' });
+};
+
+/**
+ * Get DEX by ID
+ */
+export const getBaseDexById = (id: string) => {
+  const dexKey = id.toUpperCase() as keyof typeof BASE_ECOSYSTEM.DEXS;
+  const dex = BASE_ECOSYSTEM.DEXS[dexKey];
+  if (!dex) {
+    throw new Error(`DEX ${id} not found on Base`);
+  }
+  return {
+    id: dexKey,
+    ...dex,
+  };
+};
+
+/**
+ * Get top DEXs by TVL
+ */
+export const getTopDexsByTVL = (limit: number = 5) => {
+  return getBaseDexs()
+    .sort((a, b) => {
+      const aTvl = parseInt(a.tvl?.replace(/[M+]/g, '') || '0');
+      const bTvl = parseInt(b.tvl?.replace(/[M+]/g, '') || '0');
+      return bTvl - aTvl;
+    })
+    .slice(0, limit);
+};
+
+/**
+ * Get top DEXs by 24h volume
+ */
+export const getTopDexsByVolume = (limit: number = 5) => {
+  return getBaseDexs()
+    .sort((a, b) => {
+      const aVol = parseInt(a.volume24h?.replace(/[M+]/g, '') || '0');
+      const bVol = parseInt(b.volume24h?.replace(/[M+]/g, '') || '0');
+      return bVol - aVol;
+    })
+    .slice(0, limit);
+};
+
+/**
+ * Check if DEX is supported
+ */
+export const isBaseDexSupported = (dexId: string): boolean => {
+  try {
+    const dex = getBaseDexById(dexId);
+    return dex.supported !== false;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Get total TVL across all DEXs on Base
+ */
+export const getTotalBaseDexTVL = (): { totalTVL: string; dexCount: number } => {
+  const dexs = getBaseDexs();
+  let totalTvl = 0;
+
+  dexs.forEach(dex => {
+    const tvl = parseInt(dex.tvl?.replace(/[M+]/g, '') || '0');
+    totalTvl += tvl;
+  });
+
+  return {
+    totalTVL: `${totalTvl}M+`,
+    dexCount: dexs.length,
+  };
 };
 
 /**
