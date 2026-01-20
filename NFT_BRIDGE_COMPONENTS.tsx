@@ -43,8 +43,8 @@ export const NFTBridgeSelector: React.FC<NFTBridgeSelectorProps> = ({
     137: 'Polygon',
   };
 
-  const handleBridge = () => {
-    if (selectedNFT && selectedChain) {
+  const handleBridge = (): void => {
+    if (selectedNFT && selectedChain !== null) {
       onBridgeInitiate(selectedNFT, selectedChain);
     }
   };
