@@ -758,4 +758,261 @@ export class MatchValidator {
 
     return lines.join('\n');
   }
+
+  /**
+   * Phase 7 Integration: Generate NFT rewards for match results
+   * Creates achievement/cosmetic/stat NFTs based on match performance
+   */
+  static generateNFTRewards(
+    match: GuestMatch,
+    playerId: string,
+    chainId: number = 8453 // Default to Base
+  ): NFTRewardEarned[] {
+    const rewards: NFTRewardEarned[] = [];
+
+    // Achievement NFT for winning
+    if (match.result === 'win') {
+      const victorNFT = createBassBallNFT(
+        'achievement',
+        playerId,
+        1,
+        {
+          name: 'Victory',
+          description: `Won match against ${match.awayTeam}`,
+          matchId: match.matchId,
+          score: `${match.homeScore}-${match.awayScore}`,
+          date: new Date(match.timestamp).toISOString(),
+        },
+        BigInt('500000000000000000') // 0.5 ETH
+      );
+
+      rewards.push({
+        nftId: victorNFT.id,
+        type: NFTRewardType.ACHIEVEMENT,
+        metadata: {
+          name: 'Victory',
+          description: `Won match against ${match.awayTeam}`,
+          rarity: 'common',
+          value: '0.5',
+        },
+        earnedAt: Date.now(),
+        chainId,
+        contractAddress: '0x2222222222222222222222222222222222222221',
+        eligible: true,
+      });
+    }
+
+    // Player Stats NFT for high performance (3+ goals or 2+ assists)
+    if (match.playerGoals >= 3 || match.playerAssists >= 2) {
+      const statsNFT = createBassBallNFT(
+        'player-stats',
+        playerId,
+        1,
+        {
+          name: `Match Stats - ${match.playerGoals}G ${match.playerAssists}A`,
+          description: 'Exceptional match performance',
+          goals: match.playerGoals,
+          assists: match.playerAssists,
+          matchId: match.matchId,
+        },
+        BigInt('1000000000000000000') // 1 ETH
+      );
+
+      rewards.push({
+        nftId: statsNFT.id,
+        type: NFTRewardType.PLAYER_STATS,
+        metadata: {
+          name: `Match Stats - ${match.playerGoals}G ${match.playerAssists}A`,
+          description: 'Exceptional match performance',
+          rarity: 'rare',
+          value: '1.0',
+        },
+        earnedAt: Date.now(),
+        chainId,
+        contractAddress: '0x1111111111111111111111111111111111111111',
+        eligible: true,
+      });
+    }
+
+    // Cosmetic NFT for perfect match (clean sheet or all goals)
+    if (match.playerGoals >= 5 || (match.result === 'win' && match.awayScore === 0)) {
+      const cosmeticNFT = createBassBallNFT(
+        'cosmetic',
+        playerId,
+        1,
+        {
+          name: 'Elite Jersey',
+          description: 'Special edition jersey for exceptional play',
+          rarity: 'legendary',
+        },
+        BigInt('2000000000000000000') // 2 ETH
+      );
+
+      rewards.push({
+        nftId: cosmeticNFT.id,
+        type: NFTRewardType.COSMETIC,
+        metadata: {
+          name: 'Elite Jersey',
+          description: 'Special edition jersey for exceptional play',
+          rarity: 'legendary',
+          value: '2.0',
+        },
+        earnedAt: Date.now(),
+        chainId,
+        contractAddress: '0x3333333333333333333333333333333333333331',
+        eligible: true,
+      });
+    }
+
+    return rewards;
+  }
+
+  /**
+   * Phase 7 Integration: Bridge earned NFTs to another chain
+   * Supports both Wormhole (secure) and Stargate (fast) protocols
+   */
+  static async bridgeNFTReward(
+    nft: NFTRewardEarned,
+    destChainId: number,
+    recipientAddress: string
+  ): Promise<MatchBridgeTransaction> {
+    // Check if NFT is eligible for bridging
+    if (!nft.eligible || !isNFTEligibleForBridging({
+      id: nft.nftId,
+      chainId: nft.chainId,
+      type: nft.type,
+      contractAddress: nft.contractAddress,
+      tokenId: '1',
+      owner: recipientAddress,
+      metadata: nft.metadata,
+      value: BigInt(Math.floor(parseFloat(nft.metadata.value) * 1e18)),
+    })) {
+      throw new Error('NFT not eligible for bridging');
+    }
+
+    // Determine best bridge protocol based on value
+    const nftValue = parseFloat(nft.metadata.value);
+    const protocol = getBestBridgeForNFT(
+      {
+        id: nft.nftId,
+        chainId: nft.chainId,
+        type: nft.type,
+        contractAddress: nft.contractAddress,
+        tokenId: '1',
+        owner: recipientAddress,
+        metadata: nft.metadata,
+        value: BigInt(Math.floor(nftValue * 1e18)),
+      },
+      destChainId
+    );
+
+    // Create bridge request based on protocol
+    const bridgeRequest = protocol === 'wormhole'
+      ? createWormholeNFTBridgeRequest(
+          {
+            id: nft.nftId,
+            chainId: nft.chainId,
+            type: nft.type,
+            contractAddress: nft.contractAddress,
+            tokenId: '1',
+            owner: recipientAddress,
+            metadata: nft.metadata,
+            value: BigInt(Math.floor(nftValue * 1e18)),
+          },
+          destChainId,
+          recipientAddress
+        )
+      : createStargateNFTBridgeRequest(
+          {
+            id: nft.nftId,
+            chainId: nft.chainId,
+            type: nft.type,
+            contractAddress: nft.contractAddress,
+            tokenId: '1',
+            owner: recipientAddress,
+            metadata: nft.metadata,
+            value: BigInt(Math.floor(nftValue * 1e18)),
+          },
+          destChainId,
+          recipientAddress
+        );
+
+    const fee = protocol === 'wormhole' ? '0.25%' : '0.15%';
+    const estimatedTime = protocol === 'wormhole' ? 3600000 : 600000; // 60 min vs 10 min
+
+    return {
+      txHash: `0x${Math.random().toString(16).slice(2)}`, // Placeholder
+      nftId: nft.nftId,
+      fromChain: nft.chainId,
+      toChain: destChainId,
+      protocol,
+      status: 'pending',
+      progress: 0,
+      estimatedCompletion: Date.now() + estimatedTime,
+      fee,
+      timestamp: Date.now(),
+    };
+  }
+
+  /**
+   * Phase 7 Integration: Monitor bridge transaction progress
+   */
+  static monitorBridgeProgress(
+    bridge: MatchBridgeTransaction
+  ): { status: string; progress: number; estimatedTime: number } {
+    if (bridge.protocol === 'wormhole') {
+      // Simulate Wormhole 13-validator consensus monitoring
+      const elapsed = Date.now() - bridge.timestamp;
+      const totalTime = 60 * 60 * 1000; // 60 minutes
+      const progress = Math.min(100, Math.floor((elapsed / totalTime) * 100));
+
+      return {
+        status: progress < 30 ? 'pending' : progress < 70 ? 'confirmed' : 'finalized',
+        progress,
+        estimatedTime: Math.max(0, totalTime - elapsed),
+      };
+    } else {
+      // Simulate Stargate liquidity pool bridging
+      const elapsed = Date.now() - bridge.timestamp;
+      const totalTime = 10 * 60 * 1000; // 10 minutes
+      const progress = Math.min(100, Math.floor((elapsed / totalTime) * 100));
+
+      return {
+        status: progress < 50 ? 'pending' : progress < 100 ? 'confirmed' : 'completed',
+        progress,
+        estimatedTime: Math.max(0, totalTime - elapsed),
+      };
+    }
+  }
+
+  /**
+   * Phase 7 Integration: Calculate total match rewards value
+   */
+  static calculateTotalRewardValue(rewards: NFTRewardEarned[]): string {
+    const total = rewards.reduce((sum, reward) => {
+      return sum + parseFloat(reward.metadata.value);
+    }, 0);
+
+    return total.toFixed(2);
+  }
+
+  /**
+   * Phase 7 Integration: Create match reward summary
+   */
+  static createMatchRewardSummary(
+    match: GuestMatch,
+    playerId: string,
+    chainId: number = 8453
+  ): MatchNFTRewards {
+    const rewards = this.generateNFTRewards(match, playerId, chainId);
+    const totalValue = this.calculateTotalRewardValue(rewards);
+
+    return {
+      matchId: match.matchId,
+      playerId,
+      rewards,
+      totalValue,
+      claimedAt: Date.now(),
+    };
+  }
 }
