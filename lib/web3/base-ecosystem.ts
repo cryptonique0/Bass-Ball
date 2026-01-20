@@ -502,7 +502,7 @@ export const getTopDexsByVolume = (limit: number = 5) => {
 export const isBaseDexSupported = (dexId: string): boolean => {
   try {
     const dex = getBaseDexById(dexId);
-    return dex.supported !== false;
+    return dex.supported === true;
   } catch {
     return false;
   }
@@ -651,6 +651,15 @@ export default {
   getBaseBridges,
   getBaseDexs,
   getBaseServices,
+  getBaseDexTypes,
+  getDexsByType,
+  getBaseAMMs,
+  getBaseDexAggregators,
+  getBaseDexById,
+  getTopDexsByTVL,
+  getTopDexsByVolume,
+  isBaseDexSupported,
+  getTotalBaseDexTVL,
   getBridgeUrl,
   getSwapUrl,
   getBaseEcosystemHealth,
