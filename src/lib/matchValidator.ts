@@ -1,4 +1,15 @@
 // Match validation and fairness analysis system
+// Integrated with Phase 7 NFT Bridge Support
+
+import {
+  createWormholeNFTBridgeRequest,
+  createStargateNFTBridgeRequest,
+  isNFTEligibleForBridging,
+  getBestBridgeForNFT,
+  createBassBallNFT,
+  getWormholeBridgeStatus,
+  getStargateBridgeStatus,
+} from '../lib/web3/nft-bridge';
 
 /**
  * BASE Chain Network Configuration
