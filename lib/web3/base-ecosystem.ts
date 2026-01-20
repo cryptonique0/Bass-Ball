@@ -502,32 +502,199 @@ export const BASE_ECOSYSTEM = {
     },
   },
 
-  // Tokens
-  TOKENS: {
+  // Token Lists & Registry
+  TOKEN_LIST: {
+    // Major Stablecoin & Base Assets
     ETH: {
       symbol: 'ETH',
+      name: 'Ethereum',
       decimals: 18,
       address: '0x0000000000000000000000000000000000000000', // Native
+      chainId: 8453,
+      coingeckoId: 'ethereum',
+      logoUrl: 'https://tokens.1inch.io/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png',
+      category: 'Native',
+      supported: true,
     },
     USDC: {
       symbol: 'USDC',
+      name: 'USDC Coin',
       decimals: 6,
       address: '0x833589fCD6eDb6E08f4c7C32D4f71b1566111578',
+      chainId: 8453,
+      coingeckoId: 'usd-coin',
+      logoUrl: 'https://tokens.1inch.io/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.png',
+      category: 'Stablecoin',
+      supported: true,
     },
     USDT: {
       symbol: 'USDT',
+      name: 'Tether USD',
       decimals: 6,
       address: '0xfde4C96c8593536E31F26A3d5f51B3b0FA7C00B1',
+      chainId: 8453,
+      coingeckoId: 'tether',
+      logoUrl: 'https://tokens.1inch.io/0xdac17f958d2ee523a2206206994597c13d831ec7.png',
+      category: 'Stablecoin',
+      supported: true,
     },
     DAI: {
       symbol: 'DAI',
+      name: 'Dai Stablecoin',
       decimals: 18,
       address: '0x50c5725949A6F0c72E6C4a641F14122319E53ffc',
+      chainId: 8453,
+      coingeckoId: 'dai',
+      logoUrl: 'https://tokens.1inch.io/0x6b175474e89094c44da98b954eedeac495271d0f.png',
+      category: 'Stablecoin',
+      supported: true,
+    },
+    WBTC: {
+      symbol: 'WBTC',
+      name: 'Wrapped Bitcoin',
+      decimals: 8,
+      address: '0xCbB7C0000aB88B473b1f5aFb289c13BDA476c331',
+      chainId: 8453,
+      coingeckoId: 'wrapped-bitcoin',
+      logoUrl: 'https://tokens.1inch.io/0x2260fac5e5542a773aa44fbcff022f8a6556d9ad.png',
+      category: 'Wrapped Asset',
+      supported: true,
+    },
+    AAVE: {
+      symbol: 'AAVE',
+      name: 'Aave Token',
+      decimals: 18,
+      address: '0xf323572c4E33fe6B5e7f841b33517ee3ddb667f4',
+      chainId: 8453,
+      coingeckoId: 'aave',
+      logoUrl: 'https://tokens.1inch.io/0x7fc66500c84a76ad7e9c93437e434122a1aa2014.png',
+      category: 'Governance',
+      supported: true,
+    },
+    OP: {
+      symbol: 'OP',
+      name: 'Optimism Token',
+      decimals: 18,
+      address: '0x4200000000000000000000000000000000000042',
+      chainId: 8453,
+      coingeckoId: 'optimism',
+      logoUrl: 'https://tokens.1inch.io/0x4200000000000000000000000000000000000042.png',
+      category: 'Governance',
+      supported: true,
+    },
+    ARB: {
+      symbol: 'ARB',
+      name: 'Arbitrum Token',
+      decimals: 18,
+      address: '0x217f1d3b12fbD4a66a29eFc86c1c0aeC759F8d3E',
+      chainId: 8453,
+      coingeckoId: 'arbitrum',
+      logoUrl: 'https://tokens.1inch.io/0xb50721bcf8d731f670fb3793e389f5688553c33d.png',
+      category: 'Governance',
+      supported: true,
     },
     CBETH: {
       symbol: 'cbETH',
+      name: 'Coinbase Wrapped Staked ETH',
       decimals: 18,
       address: '0x2Ae3F1Ec7F1F5012CFEab0411dC8C84497535e73',
+      chainId: 8453,
+      coingeckoId: 'coinbase-wrapped-staked-eth',
+      logoUrl: 'https://tokens.1inch.io/0xbe9895146f7bb532eceaee3f23607cc5499791f7.png',
+      category: 'Staked Asset',
+      supported: true,
+    },
+    STETH: {
+      symbol: 'stETH',
+      name: 'Lido Staked Ether',
+      decimals: 18,
+      address: '0xc1CBa3fCea344f92D9239c08C0568f6F52F3681D',
+      chainId: 8453,
+      coingeckoId: 'staked-ether',
+      logoUrl: 'https://tokens.1inch.io/0xae7ab96520de3a18e5e111b5eaab095312d7fe84.png',
+      category: 'Staked Asset',
+      supported: true,
+    },
+
+    // Base Native Tokens
+    AERODROME: {
+      symbol: 'AERO',
+      name: 'Aerodrome',
+      decimals: 18,
+      address: '0x940181a94A35A4569E4529A3CDfB74e38FD4D91f',
+      chainId: 8453,
+      coingeckoId: 'aerodrome-finance',
+      logoUrl: 'https://tokens.1inch.io/0x940181a94a35a4569e4529a3cdfb74e38fd4d91f.png',
+      category: 'Base Native DEX',
+      supported: true,
+    },
+    BSWAP: {
+      symbol: 'BSWAP',
+      name: 'BaseSwap',
+      decimals: 18,
+      address: '0x78a087D534B36b181F39F6179055f1DbbE57f366',
+      chainId: 8453,
+      coingeckoId: 'baseswap',
+      logoUrl: 'https://tokens.1inch.io/0x78a087d534b36b181f39f6179055f1dbbbe57f366.png',
+      category: 'Base Native DEX',
+      supported: true,
+    },
+    FARM: {
+      symbol: 'FARM',
+      name: 'Harvest Finance',
+      decimals: 18,
+      address: '0x4e71A2D8c1c9fBe2d97216d4Ac16Dc0a4ca1Ead3',
+      chainId: 8453,
+      coingeckoId: 'harvest-finance',
+      logoUrl: 'https://tokens.1inch.io/0x4e71a2d8c1c9fbe2d97216d4ac16dc0a4ca1ead3.png',
+      category: 'Base Native Protocol',
+      supported: true,
+    },
+    RSWP: {
+      symbol: 'RSWP',
+      name: 'RoboSwap',
+      decimals: 18,
+      address: '0x7C02A0EbB8CF8e23f4b48Dc47E5aF0e7FE67C5D0',
+      chainId: 8453,
+      coingeckoId: 'roboswap',
+      logoUrl: 'https://tokens.1inch.io/0x7c02a0ebb8cf8e23f4b48dc47e5aaf0e7fe67c5d0.png',
+      category: 'Base Native DEX',
+      supported: true,
+    },
+
+    // Additional Popular Tokens
+    WETH: {
+      symbol: 'WETH',
+      name: 'Wrapped Ether',
+      decimals: 18,
+      address: '0x4200000000000000000000000000000000000006',
+      chainId: 8453,
+      coingeckoId: 'weth',
+      logoUrl: 'https://tokens.1inch.io/0xc02aaa39b223fe8d0a0e8e4c5b0dc7c59bf04a8a.png',
+      category: 'Wrapped Asset',
+      supported: true,
+    },
+    USDC_E: {
+      symbol: 'USDC.e',
+      name: 'Bridged USDC (Ethereum)',
+      decimals: 6,
+      address: '0xd9aAEc9bA6edD8ff438001c67df050f1f5e0cd53',
+      chainId: 8453,
+      coingeckoId: 'usd-coin',
+      logoUrl: 'https://tokens.1inch.io/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.png',
+      category: 'Stablecoin',
+      supported: true,
+    },
+    RETH: {
+      symbol: 'rETH',
+      name: 'Rocket Pool ETH',
+      decimals: 18,
+      address: '0x4Fd63966879300caFafBB2627B730dBcA578cb20',
+      chainId: 8453,
+      coingeckoId: 'rocket-pool-eth',
+      logoUrl: 'https://tokens.1inch.io/0xae78736cd615f374d3085123a210448e74fc6393.png',
+      category: 'Staked Asset',
+      supported: true,
     },
   },
 
@@ -1568,6 +1735,227 @@ export const getStakingProtocolUrl = (
 };
 
 // ============================================================================
+// TOKEN LIST & REGISTRY UTILITIES
+// ============================================================================
+
+/**
+ * Get all tokens in registry
+ */
+export const getAllBaseTokens = (
+  options?: { category?: string; supported?: boolean }
+): Array<any> => {
+  let tokens = Object.values(BASE_ECOSYSTEM.TOKEN_LIST);
+
+  if (options?.category) {
+    tokens = tokens.filter(t => t.category === options.category);
+  }
+
+  if (options?.supported !== undefined) {
+    tokens = tokens.filter(t => t.supported === options.supported);
+  }
+
+  return tokens;
+};
+
+/**
+ * Get token by symbol
+ */
+export const getTokenBySymbol = (symbol: string): any => {
+  const key = Object.keys(BASE_ECOSYSTEM.TOKEN_LIST).find(
+    k => BASE_ECOSYSTEM.TOKEN_LIST[k as keyof typeof BASE_ECOSYSTEM.TOKEN_LIST]?.symbol.toUpperCase() === symbol.toUpperCase()
+  );
+  return key ? BASE_ECOSYSTEM.TOKEN_LIST[key as keyof typeof BASE_ECOSYSTEM.TOKEN_LIST] : null;
+};
+
+/**
+ * Get token by address
+ */
+export const getTokenByAddress = (address: string): any => {
+  return Object.values(BASE_ECOSYSTEM.TOKEN_LIST).find(
+    t => t.address.toLowerCase() === address.toLowerCase()
+  );
+};
+
+/**
+ * Get token by coingecko ID
+ */
+export const getTokenByCoingeckoId = (coingeckoId: string): any => {
+  return Object.values(BASE_ECOSYSTEM.TOKEN_LIST).find(
+    t => t.coingeckoId.toLowerCase() === coingeckoId.toLowerCase()
+  );
+};
+
+/**
+ * Get all token symbols
+ */
+export const getAllTokenSymbols = (): string[] => {
+  return Object.values(BASE_ECOSYSTEM.TOKEN_LIST).map(t => t.symbol);
+};
+
+/**
+ * Get all token categories
+ */
+export const getTokenCategories = (): string[] => {
+  return [
+    ...new Set(Object.values(BASE_ECOSYSTEM.TOKEN_LIST).map(t => t.category)),
+  ];
+};
+
+/**
+ * Get tokens by category
+ */
+export const getTokensByCategory = (category: string): Array<any> => {
+  return Object.values(BASE_ECOSYSTEM.TOKEN_LIST).filter(t => t.category === category);
+};
+
+/**
+ * Verify token address is valid
+ */
+export const isValidTokenAddress = (address: string): boolean => {
+  return !!getTokenByAddress(address);
+};
+
+/**
+ * Get major stablecoin tokens
+ */
+export const getMajorStablecoins = (): Array<any> => {
+  return getTokensByCategory('Stablecoin');
+};
+
+/**
+ * Get major governance tokens
+ */
+export const getMajorGovernanceTokens = (): Array<any> => {
+  return getTokensByCategory('Governance');
+};
+
+/**
+ * Get Base native tokens
+ */
+export const getBaseNativeTokens = (): Array<any> => {
+  return Object.values(BASE_ECOSYSTEM.TOKEN_LIST).filter(t =>
+    ['Base Native DEX', 'Base Native Protocol'].includes(t.category)
+  );
+};
+
+/**
+ * Get staked asset tokens
+ */
+export const getStakedAssetTokens = (): Array<any> => {
+  return getTokensByCategory('Staked Asset');
+};
+
+/**
+ * Get wrapped asset tokens
+ */
+export const getWrappedAssetTokens = (): Array<any> => {
+  return getTokensByCategory('Wrapped Asset');
+};
+
+/**
+ * Search tokens by partial symbol/name match
+ */
+export const searchTokens = (query: string): Array<any> => {
+  const q = query.toLowerCase();
+  return Object.values(BASE_ECOSYSTEM.TOKEN_LIST).filter(t =>
+    t.symbol.toLowerCase().includes(q) ||
+    t.name.toLowerCase().includes(q)
+  );
+};
+
+/**
+ * Verify contract address with token data
+ */
+export const verifyTokenContract = (
+  symbol: string,
+  address: string
+): boolean => {
+  const token = getTokenBySymbol(symbol);
+  return token ? token.address.toLowerCase() === address.toLowerCase() : false;
+};
+
+/**
+ * Get token logo URL
+ */
+export const getTokenLogo = (symbol: string): string => {
+  const token = getTokenBySymbol(symbol);
+  return token?.logoUrl || '';
+};
+
+/**
+ * Get token coingecko ID
+ */
+export const getTokenCoingeckoId = (symbol: string): string => {
+  const token = getTokenBySymbol(symbol);
+  return token?.coingeckoId || '';
+};
+
+/**
+ * Get token decimals
+ */
+export const getTokenDecimals = (symbol: string): number => {
+  const token = getTokenBySymbol(symbol);
+  return token?.decimals || 18;
+};
+
+/**
+ * Get token address
+ */
+export const getTokenAddress = (symbol: string): string => {
+  const token = getTokenBySymbol(symbol);
+  return token?.address || '';
+};
+
+/**
+ * Check if token is supported
+ */
+export const isTokenSupported = (symbol: string): boolean => {
+  const token = getTokenBySymbol(symbol);
+  return token?.supported || false;
+};
+
+/**
+ * Get total token count
+ */
+export const getTotalTokenCount = (): {
+  total: number;
+  byCategory: { [key: string]: number };
+  supported: number;
+} => {
+  const allTokens = Object.values(BASE_ECOSYSTEM.TOKEN_LIST);
+  const byCategory: { [key: string]: number } = {};
+
+  allTokens.forEach(token => {
+    if (!byCategory[token.category]) {
+      byCategory[token.category] = 0;
+    }
+    byCategory[token.category]++;
+  });
+
+  return {
+    total: allTokens.length,
+    byCategory,
+    supported: allTokens.filter(t => t.supported).length,
+  };
+};
+
+/**
+ * Get commonly used token pair suggestions
+ */
+export const getCommonTokenPairs = (): Array<{ from: string; to: string; name: string }> => {
+  return [
+    { from: 'ETH', to: 'USDC', name: 'Ethereum to USDC' },
+    { from: 'ETH', to: 'USDT', name: 'Ethereum to USDT' },
+    { from: 'USDC', to: 'USDT', name: 'USDC to USDT' },
+    { from: 'WBTC', to: 'ETH', name: 'Bitcoin to Ethereum' },
+    { from: 'DAI', to: 'USDC', name: 'DAI to USDC' },
+    { from: 'AAVE', to: 'ETH', name: 'AAVE to Ethereum' },
+    { from: 'OP', to: 'ETH', name: 'Optimism to Ethereum' },
+    { from: 'ARB', to: 'ETH', name: 'Arbitrum to Ethereum' },
+  ];
+};
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -1642,4 +2030,26 @@ export default {
   estimateStakingYield,
   getOptimalStakingStrategy,
   getStakingProtocolUrl,
+  getAllBaseTokens,
+  getTokenBySymbol,
+  getTokenByAddress,
+  getTokenByCoingeckoId,
+  getAllTokenSymbols,
+  getTokenCategories,
+  getTokensByCategory,
+  isValidTokenAddress,
+  getMajorStablecoins,
+  getMajorGovernanceTokens,
+  getBaseNativeTokens,
+  getStakedAssetTokens,
+  getWrappedAssetTokens,
+  searchTokens,
+  verifyTokenContract,
+  getTokenLogo,
+  getTokenCoingeckoId,
+  getTokenDecimals,
+  getTokenAddress,
+  isTokenSupported,
+  getTotalTokenCount,
+  getCommonTokenPairs,
 } as const;
