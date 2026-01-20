@@ -664,4 +664,4 @@ export default {
   getSwapUrl,
   getBaseEcosystemHealth,
   convertEthereumToBaseValue,
-};
+} as const;
