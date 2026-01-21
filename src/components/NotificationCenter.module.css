@@ -1,0 +1,351 @@
+/**
+ * Notification Center Styles
+ */
+
+.container {
+  position: fixed;
+  z-index: 9999;
+  font-family: 'Inter', 'Arial', sans-serif;
+}
+
+/* Position variants */
+.position_top_right {
+  top: 20px;
+  right: 20px;
+}
+
+.position_top_left {
+  top: 20px;
+  left: 20px;
+}
+
+.position_bottom_right {
+  bottom: 20px;
+  right: 20px;
+}
+
+.position_bottom_left {
+  bottom: 20px;
+  left: 20px;
+}
+
+/* Toast Container */
+.toastContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  max-width: 360px;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-left: 4px solid #1e90ff;
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast.priority_critical {
+  border-left-color: #ff4757;
+}
+
+.toast.priority_high {
+  border-left-color: #ffa502;
+}
+
+.toast.priority_normal {
+  border-left-color: #1e90ff;
+}
+
+.toast.priority_low {
+  border-left-color: #95a5a6;
+}
+
+.toastIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.toastContent {
+  flex: 1;
+}
+
+.toastTitle {
+  margin: 0 0 2px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.toastMessage {
+  margin: 0;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.toastClose {
+  background: transparent;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.toastClose:hover {
+  background: rgba(100, 200, 255, 0.1);
+  color: #64c8ff;
+}
+
+/* Bell Button */
+.bellButton {
+  position: relative;
+  background: linear-gradient(135deg, #64c8ff 0%, #00d9ff 100%);
+  border: none;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(100, 200, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.bellButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(100, 200, 255, 0.4);
+}
+
+.bellButton.active {
+  background: linear-gradient(135deg, #00d9ff 0%, #64c8ff 100%);
+  box-shadow: 0 0 24px rgba(100, 200, 255, 0.5);
+}
+
+.bellIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+  color: white;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  border: 2px solid #1e293b;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+/* Notification Panel */
+.panel {
+  position: absolute;
+  top: 70px;
+  right: 0;
+  width: 360px;
+  max-height: 500px;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  animation: slideDown 0.3s ease-out;
+  z-index: 10000;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(100, 200, 255, 0.2);
+}
+
+.panelHeader h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #64c8ff;
+}
+
+.markAllRead {
+  background: transparent;
+  border: 1px solid rgba(100, 200, 255, 0.3);
+  color: #64c8ff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.markAllRead:hover {
+  background: rgba(100, 200, 255, 0.1);
+  border-color: #64c8ff;
+}
+
+.panelList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #a0aec0;
+  font-size: 14px;
+}
+
+.notificationItem {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.notificationItem:hover {
+  background: rgba(100, 200, 255, 0.1);
+}
+
+.notificationItem.unread {
+  background: rgba(100, 200, 255, 0.05);
+  border-left: 3px solid #64c8ff;
+  padding-left: 13px;
+}
+
+.notifIcon {
+  font-size: 18px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.notifContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.notifTitle {
+  margin: 0 0 2px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.notifMessage {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  color: #cbd5e1;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.notifTime {
+  margin: 0;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.notifDelete {
+  background: transparent;
+  border: none;
+  color: #a0aec0;
+  cursor: pointer;
+  font-size: 14px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.notifDelete:hover {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+.panelFooter {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(100, 200, 255, 0.2);
+  font-size: 11px;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .position_top_right,
+  .position_bottom_right {
+    right: 10px;
+  }
+
+  .position_top_left,
+  .position_bottom_left {
+    left: 10px;
+  }
+
+  .panel {
+    width: calc(100vw - 20px);
+    max-width: 360px;
+  }
+
+  .toastContainer {
+    max-width: calc(100vw - 20px);
+  }
+}
