@@ -5,11 +5,13 @@ import { base, baseSepolia } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
 import { infuraProvider } from 'wagmi/providers/infura';
 import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
+import { createStorage } from 'wagmi';
 import { BASE_ENV, validateBaseEnv } from '../src/config/env';
 
 /**
  * RainbowKit + Wagmi Configuration for Base Chain
  * Supports: MetaMask, Coinbase Wallet, WalletConnect, and more
+ * With persistent wallet reconnection via localStorage
  */
 
 validateBaseEnv();
@@ -43,10 +45,16 @@ const { connectors } = getDefaultWallets({
   chains,
 });
 
+// Create storage instance for persistent wallet data
+const storage = typeof window !== 'undefined' 
+  ? createStorage({ storage: window.localStorage, key: 'wagmi' })
+  : undefined;
+
 export const wagmiConfig = createConfig({
   autoConnect: true,
   connectors,
   publicClient,
+  storage,
 });
 
 export { chains, RainbowKitProvider };
