@@ -1,0 +1,1 @@
+/**Match Event Editor*/ export class MatchEventEditor { private events: any[] = []; addEvent(eventType: string, config: any): void { this.events.push({ type: eventType, config }); } removeEvent(index: number): void { this.events.splice(index, 1); } getEvents(): any[] { return this.events; } }
