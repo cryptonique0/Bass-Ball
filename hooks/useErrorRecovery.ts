@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useReducer, useRef } from 'react';
-import { CustomError, ErrorSeverity, ErrorType } from '@/lib/errors';
+import { CustomError, ErrorCode, ErrorSeverity } from '@/lib/errors';
 import { getErrorHandler } from '@/lib/errorHandler';
 import { retry, RetryConfig, DEFAULT_RETRY_CONFIG, CircuitBreaker } from '@/lib/retry';
 
@@ -69,6 +69,15 @@ const DEFAULT_CONFIG: ErrorRecoveryConfig = {
   circuitBreakerThreshold: 5,
 };
 
+const INITIAL_STATE: RecoveryState = {
+  isRecovering: false,
+  strategy: null,
+  lastError: null,
+  recoveryAttempts: 0,
+  lastRecoveryTime: null,
+  canRecover: true,
+};
+
 /**
  * Hook for error recovery and resilience
  */
@@ -79,11 +88,11 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
   const cacheRef = useRef<Map<string, { data: any; timestamp: number }>>(new Map());
 
   const [state, dispatch] = useReducer(
-    (state: RecoveryState, action: RecoveryAction): RecoveryState => {
+    (current: RecoveryState, action: RecoveryAction): RecoveryState => {
       switch (action.type) {
         case 'START_RECOVERY':
           return {
-            ...state,
+            ...current,
             isRecovering: true,
             strategy: action.strategy,
             lastError: action.error,
@@ -91,33 +100,79 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
 
         case 'SUCCESS_RECOVERY':
           return {
-            ...state,
+            ...current,
             isRecovering: false,
-            recoveryAttempts: state.recoveryAttempts + 1,
+            recoveryAttempts: current.recoveryAttempts + 1,
             lastRecoveryTime: Date.now(),
             canRecover: true,
           };
 
         case 'FAILED_RECOVERY':
           return {
-    if (!cached) return null;
+            ...current,
+            isRecovering: false,
+            recoveryAttempts: current.recoveryAttempts + 1,
+            lastRecoveryTime: Date.now(),
+            canRecover: false,
+            lastError: action.error,
+          };
 
-    // Cache valid for 5 minutes
-    if (Date.now() - cached.timestamp > 5 * 60 * 1000) {
-      cacheRef.current.delete(key);
-      return null;
-    }
+        case 'RESET':
+          return INITIAL_STATE;
 
-    return cached.data;
-  }, [finalConfig.enableCache]);
+        default:
+          return current;
+      }
+    },
+    INITIAL_STATE
+  );
+
+  /**
+   * Retrieve or create a circuit breaker for an identifier
+   */
+  const getCircuitBreaker = useCallback(
+    (id: string): CircuitBreaker => {
+      const existing = circuitBreakerRef.current.get(id);
+      if (existing) return existing;
+
+      const breaker = new CircuitBreaker(finalConfig.circuitBreakerThreshold);
+      circuitBreakerRef.current.set(id, breaker);
+      return breaker;
+    },
+    [finalConfig.circuitBreakerThreshold]
+  );
+
+  /**
+   * Get cached value if valid
+   */
+  const getCached = useCallback(
+    (key: string): any | null => {
+      if (!finalConfig.enableCache) return null;
+
+      const cached = cacheRef.current.get(key);
+      if (!cached) return null;
+
+      // Cache valid for 5 minutes
+      if (Date.now() - cached.timestamp > 5 * 60 * 1000) {
+        cacheRef.current.delete(key);
+        return null;
+      }
+
+      return cached.data;
+    },
+    [finalConfig.enableCache]
+  );
 
   /**
    * Set cache
    */
-  const setCached = useCallback((key: string, data: any): void => {
-    if (!finalConfig.enableCache) return;
-    cacheRef.current.set(key, { data, timestamp: Date.now() });
-  }, [finalConfig.enableCache]);
+  const setCached = useCallback(
+    (key: string, data: any): void => {
+      if (!finalConfig.enableCache) return;
+      cacheRef.current.set(key, { data, timestamp: Date.now() });
+    },
+    [finalConfig.enableCache]
+  );
 
   /**
    * Retry strategy
@@ -143,7 +198,7 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
           ? error
           : new CustomError(
             error instanceof Error ? error.message : 'Retry failed',
-            ErrorType.RECOVERY_ERROR,
+            ErrorCode.INTERNAL_ERROR,
             ErrorSeverity.HIGH
           );
 
@@ -184,7 +239,7 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
 
       const error = new CustomError(
         'No fallback data available',
-        ErrorType.RECOVERY_ERROR,
+        ErrorCode.INTERNAL_ERROR,
         ErrorSeverity.MEDIUM
       );
 
@@ -235,7 +290,7 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
           ? error
           : new CustomError(
             error instanceof Error ? error.message : 'Cache strategy failed',
-            ErrorType.RECOVERY_ERROR,
+            ErrorCode.INTERNAL_ERROR,
             ErrorSeverity.MEDIUM
           );
 
@@ -280,7 +335,7 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
             ? degradedError
             : new CustomError(
               degradedError instanceof Error ? degradedError.message : 'Degradation failed',
-              ErrorType.RECOVERY_ERROR,
+              ErrorCode.INTERNAL_ERROR,
               ErrorSeverity.HIGH
             );
 
@@ -320,7 +375,7 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
           ? error
           : new CustomError(
             error instanceof Error ? error.message : 'User action failed',
-            ErrorType.RECOVERY_ERROR,
+            ErrorCode.INTERNAL_ERROR,
             ErrorSeverity.MEDIUM
           );
 
@@ -381,7 +436,7 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
           ? error
           : new CustomError(
             error instanceof Error ? error.message : 'Circuit breaker failed',
-            ErrorType.RECOVERY_ERROR,
+            ErrorCode.INTERNAL_ERROR,
             ErrorSeverity.HIGH
           );
 
@@ -426,289 +481,3 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     clearCaches,
   };
 }
-        attemptRecovery(customError);
-      }
-    },
-    [errorHandler]
-  );
-
-  const attemptRecovery = useCallback(async (err: CustomError) => {
-    if (isRecovering) return;
-
-    setIsRecovering(true);
-    setRecoveryAttempts(prev => prev + 1);
-
-    try {
-      // Wait before attempting recovery (exponential backoff)
-      const delay = Math.min(1000 * Math.pow(2, recoveryAttempts), 10000);
-      await new Promise(resolve => setTimeout(resolve, delay));
-
-      // Recovery strategy based on error code
-      switch (err.code) {
-        case ErrorCode.NETWORK_ERROR:
-        case ErrorCode.RPC_ERROR:
-        case ErrorCode.PROVIDER_UNAVAILABLE:
-          // Network errors: wait and let user retry
-          errorHandler.logAction('Recovered from network error', { attempts: recoveryAttempts });
-          setError(null);
-          break;
-
-        case ErrorCode.TX_TIMEOUT:
-        case ErrorCode.TX_PENDING:
-          // Transaction pending: continue monitoring
-          errorHandler.logAction('Transaction still pending', { txHash: err.context?.txHash });
-          break;
-
-        default:
-          // Other errors: require user intervention
-          break;
-      }
-
-      setLastRecoveryTime(Date.now());
-    } catch (recoveryErr) {
-      console.error('Recovery failed:', recoveryErr);
-    } finally {
-      setIsRecovering(false);
-    }
-  }, [recoveryAttempts, isRecovering, errorHandler]);
-
-  const retry = useCallback(async (fn: () => Promise<any>) => {
-    try {
-      setIsRecovering(true);
-      clearError();
-      const result = await fn();
-      setIsRecovering(false);
-      return result;
-    } catch (err) {
-      const customError = err instanceof CustomError
-        ? err
-        : new CustomError((err as Error).message);
-      handleError(customError, false);
-      setIsRecovering(false);
-      throw customError;
-    }
-  }, [handleError, clearError]);
-
-  return {
-    error,
-    isRecovering,
-    recoveryAttempts,
-    lastRecoveryTime,
-    clearError,
-    handleError,
-    retry,
-  };
-};
-
-/**
- * Hook for fallback strategies
- */
-export const useFallbackStrategy = () => {
-  const [fallbackActive, setFallbackActive] = useState(false);
-  const errorHandler = getErrorHandler();
-
-  const activateFallback = useCallback((reason: string) => {
-    errorHandler.logAction('Activating fallback strategy', { reason });
-    setFallbackActive(true);
-  }, [errorHandler]);
-
-  const deactivateFallback = useCallback(() => {
-    errorHandler.logAction('Deactivating fallback strategy');
-    setFallbackActive(false);
-  }, [errorHandler]);
-
-  const withFallback = useCallback(
-    async <T,>(
-      primaryFn: () => Promise<T>,
-      fallbackFn: () => Promise<T>,
-      errorThreshold = 3
-    ): Promise<T> => {
-      let attempts = 0;
-
-      while (attempts < errorThreshold) {
-        try {
-          const result = await primaryFn();
-          if (fallbackActive) {
-            deactivateFallback();
-          }
-          return result;
-        } catch (err) {
-          attempts++;
-          errorHandler.logAction('Primary function failed', {
-            attempt: attempts,
-            error: (err as Error).message,
-          });
-
-          if (attempts >= errorThreshold) {
-            activateFallback('Primary function threshold exceeded');
-            break;
-          }
-
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
-        }
-      }
-
-      // Try fallback
-      try {
-        errorHandler.logAction('Attempting fallback function');
-        const result = await fallbackFn();
-        return result;
-      } catch (fallbackErr) {
-        errorHandler.logAction('Fallback function also failed', {
-          error: (fallbackErr as Error).message,
-        });
-        throw fallbackErr;
-      }
-    },
-    [errorHandler, fallbackActive, activateFallback, deactivateFallback]
-  );
-
-  return {
-    fallbackActive,
-    activateFallback,
-    deactivateFallback,
-    withFallback,
-  };
-};
-
-/**
- * Hook for transaction retry with gas adjustment
- */
-export const useTransactionRecovery = () => {
-  const { retry } = useErrorRecovery();
-
-  const retryWithGasIncrease = useCallback(
-    async (
-      sendTx: (gasMultiplier: number) => Promise<string>,
-      maxAttempts = 3
-    ): Promise<string> => {
-      let lastError: Error | null = null;
-
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        try {
-          const gasMultiplier = 1 + (attempt * 0.2); // 1x, 1.2x, 1.4x
-          const result = await retry(() => sendTx(gasMultiplier));
-          return result;
-        } catch (err) {
-          lastError = err as Error;
-
-          if (attempt < maxAttempts - 1) {
-            // Wait before next attempt
-            await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
-          }
-        }
-      }
-
-      throw lastError || new Error('Transaction failed after retries');
-    },
-    [retry]
-  );
-
-  return {
-    retryWithGasIncrease,
-  };
-};
-
-/**
- * Hook for circuit breaker pattern
- */
-export const useCircuitBreaker = (threshold = 5, resetTimeout = 60000) => {
-  const [failureCount, setFailureCount] = useState(0);
-  const [isOpen, setIsOpen] = useState(false);
-  const [lastFailureTime, setLastFailureTime] = useState<number | null>(null);
-
-  const recordFailure = useCallback(() => {
-    setFailureCount(prev => prev + 1);
-    setLastFailureTime(Date.now());
-
-    if (failureCount + 1 >= threshold) {
-      setIsOpen(true);
-    }
-  }, [failureCount, threshold]);
-
-  const recordSuccess = useCallback(() => {
-    if (isOpen) {
-      setIsOpen(false);
-      setFailureCount(0);
-    }
-  }, [isOpen]);
-
-  const reset = useCallback(() => {
-    setFailureCount(0);
-    setIsOpen(false);
-    setLastFailureTime(null);
-  }, []);
-
-  // Auto-reset after timeout
-  useEffect(() => {
-    if (!isOpen || !lastFailureTime) return;
-
-    const timer = setTimeout(() => {
-      setIsOpen(false);
-      setFailureCount(Math.max(0, failureCount - 1));
-    }, resetTimeout);
-
-    return () => clearTimeout(timer);
-  }, [isOpen, lastFailureTime, resetTimeout, failureCount]);
-
-  const execute = useCallback(
-    async <T,>(fn: () => Promise<T>): Promise<T> => {
-      if (isOpen) {
-        throw new Error('Circuit breaker is open');
-      }
-
-      try {
-        const result = await fn();
-        recordSuccess();
-        return result;
-      } catch (err) {
-        recordFailure();
-        throw err;
-      }
-    },
-    [isOpen, recordFailure, recordSuccess]
-  );
-
-  return {
-    isOpen,
-    failureCount,
-    lastFailureTime,
-    recordFailure,
-    recordSuccess,
-    reset,
-    execute,
-  };
-};
-
-/**
- * Hook for timeout protection
- */
-export const useTimeoutProtection = (defaultTimeout = 30000) => {
-  const [timeout, setTimeout] = useState(defaultTimeout);
-
-  const withTimeout = useCallback(
-    async <T,>(
-      fn: () => Promise<T>,
-      customTimeout?: number
-    ): Promise<T> => {
-      const timeoutValue = customTimeout || timeout;
-
-      return Promise.race([
-        fn(),
-        new Promise<T>((_, reject) =>
-          setTimeout(() => {
-            reject(new Error(`Operation timeout after ${timeoutValue}ms`));
-          }, timeoutValue)
-        ),
-      ]);
-    },
-    [timeout]
-  );
-
-  return {
-    timeout,
-    setTimeout,
-    withTimeout,
-  };
-};
