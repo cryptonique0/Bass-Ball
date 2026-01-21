@@ -1,0 +1,1 @@
+/**Tree Data Structure*/ export class TreeNode<T> { value: T; children: TreeNode<T>[] = []; constructor(value: T) { this.value = value; } addChild(value: T): TreeNode<T> { const child = new TreeNode(value); this.children.push(child); return child; } }
