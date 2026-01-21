@@ -104,11 +104,11 @@ interface TokenBalanceProps {
 /**
  * TokenBalance Component - Displays game token balance
  */
-export function TokenBalance({ 
+export const TokenBalance = ({ 
   tokenAddress, 
   showSymbol = true,
   className = '' 
-}: TokenBalanceProps) {
+}: TokenBalanceProps) => {
   const { address, chainId } = useWallet();
   const contractAddress = tokenAddress || contractRegistry.getAddress('GAME_TOKEN', chainId || 8453);
   const { balance, symbol, formatBalance } = useGameToken(contractAddress, address);
@@ -131,7 +131,7 @@ export function TokenBalance({
       </div>
     </div>
   );
-}
+};
 
 interface ContractInteractionProps {
   contractType: 'game' | 'token' | 'team';
@@ -143,12 +143,12 @@ interface ContractInteractionProps {
 /**
  * ContractInteraction Component - Execute contract functions with UI feedback
  */
-export function ContractInteraction({ 
+export const ContractInteraction = ({ 
   contractType, 
   action, 
   onExecute,
   className = '' 
-}: ContractInteractionProps) {
+}: ContractInteractionProps) => {
   const { address } = useWallet();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
