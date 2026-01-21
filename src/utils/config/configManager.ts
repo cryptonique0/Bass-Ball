@@ -1,0 +1,1 @@
+/**Configuration Manager*/ export class ConfigManager { private config: Record<string, any> = {}; setConfig(key: string, value: any): void { this.config[key] = value; } getConfig(key: string): any { return this.config[key]; } getAllConfig(): Record<string, any> { return { ...this.config }; } }
