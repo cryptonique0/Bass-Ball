@@ -33,10 +33,9 @@ export const useTransactionPoller = (chainId = 8453) => {
       : process.env.NEXT_PUBLIC_BASE_RPC_URL;
   }, [chainId]);
 
-  const getTransactionReceipt = useCallback(async (txHash: string) => {
+  const getReceipt = useCallback(async (txHash: string) => {
     const rpcUrl = getRpcUrl();
     if (!rpcUrl) return null;
-
     try {
       const resp = await fetch(rpcUrl, {
         method: 'POST',
@@ -48,19 +47,17 @@ export const useTransactionPoller = (chainId = 8453) => {
           id: 1,
         }),
       });
-
       const data = await resp.json();
       return data.result;
     } catch (err) {
-      console.error('Receipt fetch error:', err);
+      console.error('Receipt error:', err);
       return null;
     }
   }, [getRpcUrl]);
 
-  const getCurrentBlockNumber = useCallback(async () => {
+  const getBlockNum = useCallback(async () => {
     const rpcUrl = getRpcUrl();
     if (!rpcUrl) return 0;
-
     try {
       const resp = await fetch(rpcUrl, {
         method: 'POST',
@@ -71,67 +68,52 @@ export const useTransactionPoller = (chainId = 8453) => {
           id: 1,
         }),
       });
-
       const data = await resp.json();
       return parseInt(data.result, 16);
     } catch (err) {
-      console.error('Block number fetch error:', err);
       return 0;
     }
   }, [getRpcUrl]);
 
-  const pollTransaction = useCallback(
-    async (
-      txHash: string,
-      requiredConfirmations = 2,
-      maxAttempts = 120,
-      pollInterval = 2500
-    ) => {
+  const pollTx = useCallback(
+    async (txHash: string, needed = 2, maxAt = 120, pollInt = 2500) => {
       setPollState({
         txHash,
         status: 'polling',
         receipt: null,
         confirmations: 0,
-        requiredConfirmations,
+        requiredConfirmations: needed,
         error: null,
         progress: 0,
       });
 
       attemptsRef.current = 0;
 
-      const pollFn = async () => {
+      const poll = async () => {
         try {
           attemptsRef.current += 1;
-
-          const receipt = await getTransactionReceipt(txHash);
+          const receipt = await getReceipt(txHash);
 
           if (!receipt) {
-            const progress = (attemptsRef.current / maxAttempts) * 30;
-            setPollState(prev => prev ? {
-              ...prev,
-              progress: Math.min(progress, 30),
-            } : null);
-
-            if (attemptsRef.current >= maxAttempts) {
+            const prg = (attemptsRef.current / maxAt) * 30;
+            setPollState(prev => prev ? {...prev, progress: Math.min(prg, 30)} : null);
+            if (attemptsRef.current >= maxAt) {
               setPollState(prev => prev ? {
                 ...prev,
                 status: 'timeout' as const,
-                error: 'Transaction confirmation timeout',
+                error: 'Timeout',
                 progress: 100,
               } : null);
               if (pollingRef.current) clearInterval(pollingRef.current);
-              return;
             }
             return;
           }
 
-          const currentBlock = await getCurrentBlockNumber();
+          const currBlock = await getBlockNum();
           const txBlock = parseInt(receipt.blockNumber, 16);
-          const confirmations = Math.max(0, currentBlock - txBlock + 1);
-
-          const progress = 30 + (confirmations / requiredConfirmations) * 60;
-
-          const isConfirmed = confirmations >= requiredConfirmations;
+          const confirms = Math.max(0, currBlock - txBlock + 1);
+          const prg = 30 + (confirms / needed) * 60;
+          const isConfirmed = confirms >= needed;
           const isFailed = receipt.status === 0;
 
           setPollState(prev => prev ? {
@@ -140,24 +122,20 @@ export const useTransactionPoller = (chainId = 8453) => {
               transactionHash: receipt.transactionHash,
               blockNumber: txBlock,
               blockHash: receipt.blockHash,
-              confirmations,
+              confirmations: confirms,
               gasUsed: BigInt(receipt.gasUsed),
               status: receipt.status,
             },
-            confirmations,
-            progress: Math.min(progress, isConfirmed ? 100 : 95),
-            status: isFailed
-              ? ('failed' as const)
-              : isConfirmed
-              ? ('confirmed' as const)
-              : ('polling' as const),
+            confirmations: confirms,
+            progress: Math.min(prg, isConfirmed ? 100 : 95),
+            status: isFailed ? ('failed' as const) : isConfirmed ? ('confirmed' as const) : ('polling' as const),
           } : null);
 
           if (isConfirmed || isFailed) {
             if (pollingRef.current) clearInterval(pollingRef.current);
           }
         } catch (error) {
-          const err = error instanceof Error ? error.message : 'Unknown error';
+          const err = error instanceof Error ? error.message : 'Error';
           setPollState(prev => prev ? {
             ...prev,
             status: 'failed' as const,
@@ -168,13 +146,13 @@ export const useTransactionPoller = (chainId = 8453) => {
         }
       };
 
-      pollingRef.current = setInterval(pollFn, pollInterval);
-      await pollFn();
+      pollingRef.current = setInterval(poll, pollInt);
+      await poll();
     },
-    [getTransactionReceipt, getCurrentBlockNumber]
+    [getReceipt, getBlockNum]
   );
 
-  const stopPolling = useCallback(() => {
+  const stop = useCallback(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
@@ -189,9 +167,9 @@ export const useTransactionPoller = (chainId = 8453) => {
 
   return {
     pollState,
-    pollTransaction,
-    stopPolling,
-    getTransactionReceipt,
-    getCurrentBlockNumber,
+    pollTx,
+    stop,
+    getReceipt,
+    getBlockNum,
   };
 };
