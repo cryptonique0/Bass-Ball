@@ -1,0 +1,1 @@
+/**Player Management Admin*/ export class PlayerManagementAdmin { resetPlayerStats(playerId: string): void {} adjustPlayerRating(playerId: string, ratingChange: number): void {} generateSeasonRewards(season: number): void {} }
