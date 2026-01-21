@@ -1,0 +1,1 @@
+/**Tournament Template Generator*/ export class TournamentTemplateGenerator { createTemplate(name: string, teams: number, format: string): any { return { id: `template_${Date.now()}`, name, teams, format }; } }
