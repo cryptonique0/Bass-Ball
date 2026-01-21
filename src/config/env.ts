@@ -45,6 +45,12 @@ export const BASE_ENV = {
   infuraId: process.env.NEXT_PUBLIC_INFURA_ID || process.env.NEXT_PUBLIC_INFURA_KEY || '',
 } as const;
 
+export const BLOCKCHAIN_CONFIG = {
+  CHAIN_ID: `${BASE_ENV.baseChainId}`,
+  RPC_URL: BASE_ENV.baseRpcUrl,
+  CONTRACT_ADDRESS: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '',
+} as const;
+
 let envWarningsLogged = false;
 export const validateBaseEnv = (): void => {
   if (envWarningsLogged) return;
