@@ -50,8 +50,12 @@ export interface TeamCustomization {
   // Jersey Settings
   jerseyHome: JerseyColors;
   jerseyAway?: JerseyColors;
-  jerseyThird?: JerseyColors;
-  defaultJersey: 'home' | 'away' | 'third';
+  jerseyNeutral?: JerseyColors;
+  defaultJersey: 'home' | 'away' | 'neutral';
+  
+  // Fan Merchandise
+  allowFanOrders: boolean; // Enable fans to order team shirts
+  merchandiseEnabled: boolean;
 
   // Badge
   currentBadge: CustomBadge | null;
@@ -222,6 +226,8 @@ export class TeamCustomizationManager {
       canCustomize: true,
       customizationCount: 0,
       customizationLimit: -1, // Unlimited
+      allowFanOrders: true,
+      merchandiseEnabled: true,
       createdDate: Date.now(),
       lastModifiedDate: Date.now(),
       modifiedBy: owner,
@@ -238,7 +244,7 @@ export class TeamCustomizationManager {
    */
   updateJerseyColors(
     teamId: string,
-    jerseyType: 'home' | 'away' | 'third',
+    jerseyType: 'home' | 'away' | 'neutral',
     colors: JerseyColors,
     modifiedBy: string
   ): TeamCustomization {
@@ -250,7 +256,7 @@ export class TeamCustomizationManager {
     } else if (jerseyType === 'away') {
       customization.jerseyAway = colors;
     } else {
-      customization.jerseyThird = colors;
+      customization.jerseyNeutral = colors;
     }
 
     customization.lastModifiedDate = Date.now();
@@ -273,7 +279,7 @@ export class TeamCustomizationManager {
   applyJerseyPreset(
     teamId: string,
     presetName: string,
-    jerseyType: 'home' | 'away' | 'third',
+    jerseyType: 'home' | 'away' | 'neutral',
     modifiedBy: string
   ): TeamCustomization {
     const preset = JERSEY_PRESETS[presetName];
