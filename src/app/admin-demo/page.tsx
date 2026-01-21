@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAdmin } from '@/hooks/useAdmin';
-import styles from './admin-demo.module.css';
+import styles from './page.module.css';
 
 export default function AdminDemoPage() {
   const { investigation, economicMonitoring, featureFlags } = useAdmin();
