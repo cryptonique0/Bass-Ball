@@ -288,7 +288,7 @@ export default function KonamiFeaturesPage() {
               capacity={65000}
               maxCapacity={80000}
               atmosphere={78}
-              fame: 85}
+              fame={85}
               facilities={3}
             />
           </>
