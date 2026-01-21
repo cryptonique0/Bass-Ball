@@ -1,35 +1,45 @@
 import { getDefaultWallets, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
-import { configureChains, createConfig, WagmiConfig } from 'wagmi';
+import { configureChains, createConfig } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
 import { publicProvider } from 'wagmi/providers/public';
 import { infuraProvider } from 'wagmi/providers/infura';
+import { jsonRpcProvider } from 'wagmi/providers/jsonRpc';
+import { BASE_ENV, validateBaseEnv } from '../src/config/env';
 
 /**
  * RainbowKit + Wagmi Configuration for Base Chain
  * Supports: MetaMask, Coinbase Wallet, WalletConnect, and more
  */
 
-// Validate required environment variable
-const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
-if (!walletConnectProjectId) {
-  console.warn(
-    '⚠️  Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID. ' +
-    'Get a free project ID at https://cloud.walletconnect.com'
-  );
+validateBaseEnv();
+
+const providers = [
+  jsonRpcProvider({
+    priority: 0,
+    rpc: (chain) => {
+      if (chain.id === base.id) {
+        return { http: BASE_ENV.baseRpcUrl };
+      }
+      if (chain.id === baseSepolia.id) {
+        return { http: BASE_ENV.baseSepoliaRpcUrl };
+      }
+      return null;
+    },
+  }),
+];
+
+if (BASE_ENV.infuraId) {
+  providers.push(infuraProvider({ apiKey: BASE_ENV.infuraId, priority: 1 }));
 }
 
-const { chains, publicClient } = configureChains(
-  [base, baseSepolia],
-  [
-    infuraProvider({ apiKey: process.env.NEXT_PUBLIC_INFURA_KEY || '' }),
-    publicProvider(),
-  ]
-);
+providers.push(publicProvider({ priority: 2 }));
+
+const { chains, publicClient } = configureChains([base, baseSepolia], providers);
 
 const { connectors } = getDefaultWallets({
   appName: 'Bass Ball',
-  projectId: walletConnectProjectId || 'demo-projectid-placeholder',
+  projectId: BASE_ENV.walletConnectProjectId || 'demo-projectid-placeholder',
   chains,
 });
 
