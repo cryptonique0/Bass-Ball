@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useStreamingContent } from '@/hooks/useStreaming';
-import type { StreamAccount, LiveStream, StreamChat, StreamEvent } from '@/lib/streamingIntegration';
+import type { StreamAccount, LiveStream, StreamMessage } from '@/lib/streamingIntegration';
+import type { StreamEvent } from '@/lib/streamingIntegration';
 import type { Replay, Highlight, Clip } from '@/lib/replayEngine';
 import type { VideoAsset } from '@/services/cdn-service';
 import styles from './streaming-demo.module.css';
@@ -207,7 +208,7 @@ export default function StreamingDemo() {
               <h3>💬 Chat Activity</h3>
               {streaming.currentStream?.chatMessages && streaming.currentStream.chatMessages.length > 0 ? (
                 <div className={styles.chatList}>
-                  {streaming.currentStream.chatMessages.slice(-5).map((msg: StreamChat, i: number) => (
+                  {streaming.currentStream.chatMessages.slice(-5).map((msg: StreamMessage, i: number) => (
                     <div key={i} className={styles.chatItem}>
                       <span className={styles.username}>{msg.username}</span>
                       <span className={styles.message}>{msg.content}</span>
