@@ -1,0 +1,1 @@
+/**Linked List Data Structure*/ export class LinkedList<T> { private head: any = null; private size: number = 0; add(value: T): void { const node = { value, next: null }; if (!this.head) { this.head = node; } else { let current = this.head; while (current.next) { current = current.next; } current.next = node; } this.size++; } getSize(): number { return this.size; } }
