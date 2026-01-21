@@ -316,7 +316,7 @@ export default function StreamingDemo() {
                 <p className={styles.count}>Total Clips: {replays.clips.length}</p>
                 {replays.clips.length > 0 && (
                   <ul>
-                    {replays.clips.slice(-3).map(c => (
+                    {replays.clips.slice(-3).map((c: Clip) => (
                       <li key={c.id} className={styles.listItem}>
                         🎬 {c.title || 'Untitled Clip'} ({c.format})
                       </li>
@@ -437,7 +437,7 @@ export default function StreamingDemo() {
                 <p className={styles.count}>Total Assets: {cdn.assets.length}</p>
                 {cdn.assets.length > 0 && (
                   <ul>
-                    {cdn.assets.slice(-3).map(a => (
+                    {cdn.assets.slice(-3).map((a: VideoAsset) => (
                       <li key={a.id} className={styles.listItem}>
                         📹 {a.filename} - {a.status}
                       </li>
