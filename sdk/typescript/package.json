@@ -1,0 +1,31 @@
+{
+  "name": "@bassball/sdk",
+  "version": "1.0.0",
+  "description": "Official Bass Ball SDK for JavaScript/TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "bassball",
+    "web3",
+    "gaming",
+    "blockchain",
+    "base"
+  ],
+  "author": "Bass Ball Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Bass-Ball/Bass-Ball.git"
+  }
+}
