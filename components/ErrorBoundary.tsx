@@ -1,7 +1,7 @@
 'use client';
 
 import React, { ReactNode, useState, useEffect } from 'react';
-import { CustomError, ErrorSeverity } from '@/lib/errors';
+import { CustomError, ErrorSeverity, ErrorCode } from '@/lib/errors';
 import { getErrorHandler } from '@/lib/errorHandler';
 
 interface ErrorBoundaryProps {
@@ -37,7 +37,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (!(error instanceof CustomError)) {
       customError = new CustomError(
         error.message || 'Unknown error',
-        undefined,
+        ErrorCode.INTERNAL_ERROR,
         ErrorSeverity.HIGH,
         { originalError: error }
       );
