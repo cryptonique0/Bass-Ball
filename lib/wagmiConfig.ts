@@ -10,6 +10,15 @@ import { infuraProvider } from 'wagmi/providers/infura';
  * Supports: MetaMask, Coinbase Wallet, WalletConnect, and more
  */
 
+// Validate required environment variable
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
+if (!walletConnectProjectId) {
+  console.warn(
+    '⚠️  Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID. ' +
+    'Get a free project ID at https://cloud.walletconnect.com'
+  );
+}
+
 const { chains, publicClient } = configureChains(
   [base, baseSepolia],
   [
@@ -20,7 +29,7 @@ const { chains, publicClient } = configureChains(
 
 const { connectors } = getDefaultWallets({
   appName: 'Bass Ball',
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '',
+  projectId: walletConnectProjectId || 'demo-projectid-placeholder',
   chains,
 });
 
