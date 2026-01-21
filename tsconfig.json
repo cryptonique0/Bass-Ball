@@ -65,6 +65,8 @@
     "node_modules",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "jest.config.js"
+    "jest.config.js",
+    "ALL_EVM_WALLETS_EXAMPLES.tsx",
+    "CROSS_CHAIN_SWAP_COMPONENTS.tsx"
   ]
 }
