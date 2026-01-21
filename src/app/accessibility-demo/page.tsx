@@ -10,7 +10,7 @@ export default function AccessibilityDemoPage() {
 
   const openModal = () => {
     setModalOpen(true);
-    setTimeout(() => firstFocusableRef.current?.focus(), 100);
+    setTimeout(() => { firstFocusableRef.current?.focus(); }, 100);
   };
 
   const closeModal = () => {
