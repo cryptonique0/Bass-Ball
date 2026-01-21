@@ -1,0 +1,1 @@
+/**Formation Editor*/ export class FormationEditor { updateFormation(formationId: string, positions: any[]): void {} duplicateFormation(formationId: string): string { return `formation_${Date.now()}`; } }
