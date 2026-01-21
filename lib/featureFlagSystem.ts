@@ -395,8 +395,9 @@ class FeatureFlagService {
       flagId: variant === 'control' ? test.controlVersion : test.treatmentVersion,
       userId,
       eventType: 'viewed',
+      timestamp: Date.now(),
       metadata: { abTestId: testId, variant },
-    });
+    });;
   }
 
   // ========================================================================
@@ -487,6 +488,7 @@ class FeatureFlagService {
         flagId,
         userId,
         eventType: enabled ? 'enabled' : 'disabled',
+        timestamp: Date.now(),
         metadata: { reason, context },
       });
 
