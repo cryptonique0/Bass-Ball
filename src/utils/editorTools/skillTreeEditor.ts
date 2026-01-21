@@ -1,0 +1,1 @@
+/**Skill Tree Editor*/ export class SkillTreeEditor { private skills: Map<string, any> = new Map(); addSkill(skillId: string, config: any): void { this.skills.set(skillId, config); } removeSkill(skillId: string): void { this.skills.delete(skillId); } getSkill(skillId: string): any { return this.skills.get(skillId); } }
