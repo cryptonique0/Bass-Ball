@@ -439,7 +439,7 @@ export default function StreamingDemo() {
                   <ul>
                     {cdn.assets.slice(-3).map((a: VideoAsset) => (
                       <li key={a.id} className={styles.listItem}>
-                        📹 {a.filename} - {a.status}
+                        📹 {a.title || 'Untitled'} - {a.format}
                       </li>
                     ))}
                   </ul>
