@@ -1,0 +1,1 @@
+/**Data Migration Tool*/ export class DataMigrationTool { migratePlayerData(oldFormat: any): any { return { ...oldFormat, version: 2, migrated: true }; } validateMigration(data: any): boolean { return data.version === 2; } }
