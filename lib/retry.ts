@@ -354,7 +354,7 @@ export async function retryWithTimeout<T>(
       setTimeout(
         () => reject(new CustomError(
           `Operation timed out after ${timeoutMs}ms`,
-          ErrorType.TIMEOUT_ERROR,
+          ErrorCode.TIMEOUT,
           ErrorSeverity.HIGH
         )),
         timeoutMs
