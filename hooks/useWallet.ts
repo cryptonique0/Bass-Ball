@@ -22,10 +22,23 @@ export interface WalletState {
 /**
  * Enhanced wallet hook with persistent reconnection and network validation
  */
-export function useWallet() {
+export const useWallet = (): WalletState & {
+  isSwitching: boolean;
+  address?: string;
+  chainId?: number;
+  chainName?: string;
+  connector?: any;
+  connectors: any[];
+  connect: (connectorId?: string) => Promise<boolean>;
+  disconnect: () => void;
+  switchToCorrectNetwork: () => Promise<boolean>;
+  formatAddress: (addr?: string) => string;
+  getNetworkName: () => string;
+  getSupportedNetworks: () => typeof base[];
+} => {
   const { address, isConnected, isConnecting, isReconnecting, connector } = useAccount();
   const { chain } = useNetwork();
-  const { connect, connectors, error: connectError, isPending } = useConnect();
+  const { connect, connectors, error: connectError, isLoading: isConnecting2 } = useConnect();
   const { disconnect } = useDisconnect();
   const { switchNetwork, isLoading: isSwitching } = useSwitchNetwork();
   
@@ -49,7 +62,7 @@ export function useWallet() {
     
     if (isReconnecting) {
       state = 'reconnecting';
-    } else if (isConnecting || isPending) {
+    } else if (isConnecting || isConnecting2) {
       state = 'connecting';
     } else if (isConnected && address) {
       if (!isCorrectNetwork()) {
@@ -69,7 +82,7 @@ export function useWallet() {
       isCorrectNetwork: isCorrectNetwork(),
       requiresNetworkSwitch: isConnected && !isCorrectNetwork(),
     });
-  }, [isConnected, isConnecting, isReconnecting, isPending, address, chain, connectError, isCorrectNetwork]);
+  }, [isConnected, isConnecting, isReconnecting, isConnecting2, address, chain, connectError, isCorrectNetwork]);
 
   // Persistent reconnect on mount
   useEffect(() => {
@@ -160,6 +173,6 @@ export function useWallet() {
       return chain.name;
     },
     
-    getSupportedNetworks: () => [base, baseSepolia],
+    getSupportedNetworks: () => [base, baseSepolia] as any[],
   };
-}
+};
