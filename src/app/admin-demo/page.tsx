@@ -292,9 +292,9 @@ export default function AdminDemoPage() {
         <div className={styles.card}>
           <h3>Progressive Rollouts</h3>
           {featureFlags.flags
-            .filter((f) => f.rolloutPercentage > 0 && f.rolloutPercentage < 100)
+            .filter((f: any) => f.rolloutPercentage > 0 && f.rolloutPercentage < 100)
             .slice(0, 4)
-            .map((flag) => (
+            .map((flag: any) => (
               <div key={flag.id} className={styles.rolloutItem}>
                 <span className={styles.flagName}>{flag.name}</span>
                 <div className={styles.progressBar}>
@@ -341,7 +341,7 @@ export default function AdminDemoPage() {
               <span>Enabled %</span>
               <span>Users</span>
             </div>
-            {featureFlags.analytics.slice(0, 5).map((analytic) => (
+            {featureFlags.analytics.slice(0, 5).map((analytic: any) => (
               <div key={analytic.flagId} className={styles.analyticsRow}>
                 <span>{analytic.flagId}</span>
                 <span>{analytic.totalEvaluations}</span>
