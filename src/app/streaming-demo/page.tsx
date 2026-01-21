@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useStreamingContent } from '@/hooks/useStreaming';
+import type { StreamAccount, LiveStream, StreamChat, StreamEvent } from '@/lib/streamingIntegration';
+import type { Replay, Highlight, Clip } from '@/lib/replayEngine';
+import type { VideoAsset } from '@/services/cdn-service';
 import styles from './streaming-demo.module.css';
 
 const userId = 'demo_user_001';
@@ -130,7 +133,7 @@ export default function StreamingDemo() {
               <h3>🔗 Connected Accounts</h3>
               {streaming.accounts.length > 0 ? (
                 <div className={styles.accountsList}>
-                  {streaming.accounts.map(account => (
+                  {streaming.accounts.map((account: StreamAccount) => (
                     <div key={account.id} className={styles.accountItem}>
                       <span className={styles.platform}>{account.platform.toUpperCase()}</span>
                       <span className={styles.channel}>{account.channelName}</span>
@@ -204,7 +207,7 @@ export default function StreamingDemo() {
               <h3>💬 Chat Activity</h3>
               {streaming.currentStream?.chatMessages && streaming.currentStream.chatMessages.length > 0 ? (
                 <div className={styles.chatList}>
-                  {streaming.currentStream.chatMessages.slice(-5).map((msg, i) => (
+                  {streaming.currentStream.chatMessages.slice(-5).map((msg: StreamChat, i: number) => (
                     <div key={i} className={styles.chatItem}>
                       <span className={styles.username}>{msg.username}</span>
                       <span className={styles.message}>{msg.content}</span>
@@ -221,7 +224,7 @@ export default function StreamingDemo() {
               <h3>🎉 Recent Events</h3>
               {streaming.currentStream?.events && streaming.currentStream.events.length > 0 ? (
                 <div className={styles.eventsList}>
-                  {streaming.currentStream.events.slice(-5).map((event, i) => (
+                  {streaming.currentStream.events.slice(-5).map((event: StreamEvent, i: number) => (
                     <div key={i} className={styles.eventItem}>
                       <span className={styles.eventType}>{event.type}</span>
                       <span className={styles.eventUser}>{event.username}</span>
@@ -259,7 +262,7 @@ export default function StreamingDemo() {
                 <p className={styles.count}>Total Replays: {replays.replays.length}</p>
                 {replays.replays.length > 0 && (
                   <ul>
-                    {replays.replays.slice(-3).map(r => (
+                    {replays.replays.slice(-3).map((r: Replay) => (
                       <li key={r.id} className={styles.listItem}>
                         📽 {r.title || 'Untitled Replay'} ({r.duration}s)
                       </li>
@@ -276,7 +279,7 @@ export default function StreamingDemo() {
                 <p className={styles.count}>Total Highlights: {replays.highlights.length}</p>
                 {replays.highlights.length > 0 ? (
                   <div className={styles.highlightGrid}>
-                    {replays.highlights.slice(-4).map(h => (
+                    {replays.highlights.slice(-4).map((h: Highlight) => (
                       <div key={h.id} className={styles.highlightItem}>
                         <div className={styles.highlightType}>{h.type}</div>
                         <div className={styles.highlightStats}>
