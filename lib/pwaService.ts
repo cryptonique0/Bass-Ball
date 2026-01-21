@@ -56,6 +56,7 @@ export interface PushNotificationOptions {
   body?: string;
   icon?: string;
   tag?: string;
+  badge?: string;
   data?: Record<string, unknown>;
 }
 
@@ -631,7 +632,13 @@ class PWAService {
       try {
         await this.swRegistration.showNotification(
           options.title,
-          options.options
+          {
+            body: options.body,
+            icon: options.icon,
+            tag: options.tag,
+            badge: options.badge,
+            data: options.data,
+          }
         );
       } catch (error) {
         console.error('Failed to send notification:', error);
@@ -811,11 +818,9 @@ class PWAService {
   private notifyUpdate(): void {
     this.sendNotification({
       title: 'App Updated',
-      options: {
-        body: 'A new version of the app is available. Refresh to update.',
-        tag: 'app-update',
-        badge: '/icons/badge-192x192.png'
-      }
+      body: 'A new version of the app is available. Refresh to update.',
+      tag: 'app-update',
+      badge: '/icons/badge-192x192.png',
     }).catch(console.error);
   }
 }
