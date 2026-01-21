@@ -1,0 +1,1 @@
+/**Graphics Settings*/ export class GraphicsSettingsManager { updateResolution(width: number, height: number): void {} updateQuality(quality: 'low' | 'medium' | 'high' | 'ultra'): void {} toggleShadows(enabled: boolean): void {} togglePostProcessing(enabled: boolean): void {} }
