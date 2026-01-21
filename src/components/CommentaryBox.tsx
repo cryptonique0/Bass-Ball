@@ -5,7 +5,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useCommentary } from '@/hooks/useCommentary';
+import { useCommentary } from '../hooks/useCommentary';
 import styles from './CommentaryBox.module.css';
 
 interface CommentaryBoxProps {
