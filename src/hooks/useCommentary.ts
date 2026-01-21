@@ -3,7 +3,8 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { CommentatorSystem, Commentator, EventType } from '@/utils/commentary/commentators';
+import type { Commentator, EventType } from '../utils/commentary/commentators';
+import { CommentatorSystem } from '../utils/commentary/commentators';
 
 interface CommentaryState {
   currentCommentary: string;
