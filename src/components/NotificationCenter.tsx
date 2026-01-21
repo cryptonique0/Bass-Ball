@@ -21,7 +21,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const visibleNotifications = notifications.slice(0, maxVisible);
 
   const getNotificationIcon = (type: NotificationType): string => {
-    const icons: Record<NotificationType, string> = {
+    const icons: Record<string, string> = {
       match_goal: '⚽',
       match_card: '🟨',
       match_substitution: '🔄',

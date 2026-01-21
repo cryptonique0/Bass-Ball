@@ -25,7 +25,7 @@ export const useWebSocket = (autoConnect: boolean = true) => {
       setError(event.data?.error || 'Connection error');
     };
 
-    const handleReconnect = (event: WebSocketEvent) => {
+    const handleReconnect = () => {
       setIsConnecting(true);
     };
 
@@ -33,13 +33,13 @@ export const useWebSocket = (autoConnect: boolean = true) => {
     wsService.current.on('connection:error', handleError);
     wsService.current.on('connection:reconnect', handleReconnect);
 
-    wsService.current.connect().catch((err) => {
+    wsService.current.connect().catch((err: any) => {
       setError(err.message);
       setIsConnecting(false);
     });
 
     return () => {
-      // Cleanup would go here
+      // Cleanup
     };
   }, [autoConnect]);
 
@@ -54,7 +54,10 @@ export const useWebSocket = (autoConnect: boolean = true) => {
 /**
  * Hook for listening to WebSocket events
  */
-export const useWebSocketEvent = (eventType: EventType, callback?: (event: WebSocketEvent) => void) => {
+export const useWebSocketEvent = (
+  eventType: EventType,
+  callback?: (event: WebSocketEvent) => void
+) => {
   const [lastEvent, setLastEvent] = useState<WebSocketEvent | null>(null);
   const wsService = useRef(WebSocketService);
 
@@ -102,21 +105,18 @@ export const useNotifications = () => {
   const notificationService = useRef(NotificationService);
 
   useEffect(() => {
-    // Load initial notifications
     const initial = notificationService.current.getNotifications({ limit: 50 });
     setNotifications(initial);
 
-    const stats = notificationService.current.getStats();
-    setStats(stats);
+    const initialStats = notificationService.current.getStats();
+    setStats(initialStats);
 
-    // Subscribe to new notifications
     const unsubscribe = notificationService.current.onNotification((notification) => {
       setNotifications((prev) => [notification, ...prev]);
       const updatedStats = notificationService.current.getStats();
       setStats(updatedStats);
     });
 
-    // Subscribe to stats changes
     const unsubscribeStats = notificationService.current.onStatsChange((newStats) => {
       setStats(newStats);
     });
@@ -285,15 +285,4 @@ export const usePlayerStatus = () => {
   }, []);
 
   return { onlinePlayers };
-};
-
-export default {
-  useWebSocket,
-  useWebSocketEvent,
-  useWebSocketChannel,
-  useNotifications,
-  useLiveMatch,
-  useLiveQueue,
-  useActivityFeed,
-  usePlayerStatus,
 };
