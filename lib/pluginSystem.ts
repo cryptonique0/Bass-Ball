@@ -40,11 +40,15 @@ export interface PluginHooks {
   renderUI?: () => React.ReactNode;
 }
 
+import { CustomError, ErrorCode, ErrorSeverity } from '@/lib/errors';
+import { getErrorHandler, logBreadcrumb } from '@/lib/errorHandler';
+
 class PluginSystem {
   private plugins: Map<string, Plugin> = new Map();
   private hooks: Map<string, Set<Function>> = new Map();
   private eventBus: Map<string, Set<Function>> = new Map();
   private storage: Map<string, Map<string, unknown>> = new Map();
+  private errorHandler = getErrorHandler();
 
   // Register a plugin
   async register(plugin: Plugin): Promise<boolean> {
@@ -77,10 +81,18 @@ class PluginSystem {
     try {
       await plugin.init(context);
       this.plugins.set(id, plugin);
+      logBreadcrumb('plugin', 'info', `Registered plugin ${id}`, { id, type: plugin.manifest.type });
       console.log(`Plugin ${id} registered successfully`);
       return true;
     } catch (error) {
-      console.error(`Failed to initialize plugin ${id}:`, error);
+      this.errorHandler.handleError(
+        new CustomError(
+          `Failed to initialize plugin ${id}`,
+          ErrorCode.INTERNAL_ERROR,
+          ErrorSeverity.HIGH,
+          { id, error }
+        )
+      );
       return false;
     }
   }
@@ -101,7 +113,14 @@ class PluginSystem {
       console.log(`Plugin ${pluginId} unregistered`);
       return true;
     } catch (error) {
-      console.error(`Failed to destroy plugin ${pluginId}:`, error);
+      this.errorHandler.handleError(
+        new CustomError(
+          `Failed to destroy plugin ${pluginId}`,
+          ErrorCode.INTERNAL_ERROR,
+          ErrorSeverity.MEDIUM,
+          { pluginId, error }
+        )
+      );
       return false;
     }
   }
@@ -118,7 +137,14 @@ class PluginSystem {
         const result = await handler(data);
         results.push(result);
       } catch (error) {
-        console.error(`Error executing hook ${hookName}:`, error);
+        this.errorHandler.handleError(
+          new CustomError(
+            `Error executing hook ${hookName}`,
+            ErrorCode.INTERNAL_ERROR,
+            ErrorSeverity.MEDIUM,
+            { hookName, error }
+          )
+        );
       }
     }
 
@@ -155,7 +181,14 @@ class PluginSystem {
       try {
         handler(data);
       } catch (error) {
-        console.error(`Error in event handler for ${event}:`, error);
+        this.errorHandler.handleError(
+          new CustomError(
+            `Error in event handler for ${event}`,
+            ErrorCode.INTERNAL_ERROR,
+            ErrorSeverity.MEDIUM,
+            { event, error }
+          )
+        );
       }
     });
 
@@ -165,7 +198,14 @@ class PluginSystem {
         try {
           plugin.onEvent(event, data);
         } catch (error) {
-          console.error(`Error in plugin ${plugin.manifest.id} onEvent:`, error);
+          this.errorHandler.handleError(
+            new CustomError(
+              `Error in plugin ${plugin.manifest.id} onEvent`,
+              ErrorCode.INTERNAL_ERROR,
+              ErrorSeverity.MEDIUM,
+              { pluginId: plugin.manifest.id, event, error }
+            )
+          );
         }
       }
     });
