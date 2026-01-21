@@ -1,0 +1,1 @@
+/**Queue System*/ export class QueueManager { private queues: Map<string, any[]> = new Map(); enqueue(queueId: string, item: any): void { if (!this.queues.has(queueId)) { this.queues.set(queueId, []); } this.queues.get(queueId)!.push(item); } dequeue(queueId: string): any { const queue = this.queues.get(queueId); return queue?.shift(); } }
