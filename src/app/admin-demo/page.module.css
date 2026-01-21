@@ -1,0 +1,1196 @@
+/* ========================================================================
+   ADMIN DEMO PAGE STYLES - Dark Theme
+   Comprehensive styling for moderation, economic monitoring, features
+   ======================================================================== */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+  color: #e0e0e0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 0;
+}
+
+/* ========================================================================
+   HEADER SECTION
+   ======================================================================== */
+
+.header {
+  background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 100%);
+  border-bottom: 2px solid #00d9ff;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 2px 8px rgba(0, 217, 255, 0.1);
+}
+
+.header h1 {
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #00d9ff;
+  letter-spacing: 0.5px;
+}
+
+.header p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #a0a0a0;
+  font-weight: 400;
+}
+
+/* ========================================================================
+   TAB NAVIGATION
+   ======================================================================== */
+
+.tabs {
+  display: flex;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  padding: 0 2.5rem;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.tab {
+  padding: 1rem 1.5rem;
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-bottom: 2px solid transparent;
+  position: relative;
+}
+
+.tab:hover {
+  color: #00d9ff;
+  background: rgba(0, 217, 255, 0.05);
+}
+
+.tab.active {
+  color: #00d9ff;
+  border-bottom-color: #00d9ff;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d9ff, transparent);
+}
+
+/* ========================================================================
+   TAB CONTENT
+   ======================================================================== */
+
+.tabContent {
+  padding: 2.5rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================================================
+   SECTION HEADERS
+   ======================================================================== */
+
+.sectionHeader {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #333;
+}
+
+.sectionHeader h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #00d9ff;
+}
+
+.sectionHeader p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #808080;
+}
+
+/* ========================================================================
+   GRID LAYOUT
+   ======================================================================== */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ========================================================================
+   CARD COMPONENT
+   ======================================================================== */
+
+.card {
+  background: linear-gradient(135deg, #1a1a1a 0%, #252525 100%);
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 217, 255, 0.3),
+    transparent
+  );
+}
+
+.card:hover {
+  border-color: #00d9ff;
+  box-shadow: 0 6px 16px rgba(0, 217, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card h3::before {
+  content: '';
+  width: 3px;
+  height: 1.1rem;
+  background: #00d9ff;
+  border-radius: 2px;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+/* ========================================================================
+   INVESTIGATION QUEUE / LIST STYLES
+   ======================================================================== */
+
+.investigationQueue {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.investigationQueue::-webkit-scrollbar {
+  width: 6px;
+}
+
+.investigationQueue::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 3px;
+}
+
+.investigationQueue::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+.investigationQueue::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+.queueItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #222;
+  border-left: 3px solid #666;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.queueItem:hover {
+  background: #2a2a2a;
+  border-left-color: #00d9ff;
+}
+
+.queueItem.critical {
+  border-left-color: #ff3535;
+  background: rgba(255, 53, 53, 0.05);
+}
+
+.queueItem.high {
+  border-left-color: #ffa500;
+  background: rgba(255, 165, 0, 0.05);
+}
+
+.queueItem.medium {
+  border-left-color: #ffcc00;
+  background: rgba(255, 204, 0, 0.05);
+}
+
+.queueItem.low {
+  border-left-color: #00d9ff;
+  background: rgba(0, 217, 255, 0.05);
+}
+
+.riskIndicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.playerIdLabel {
+  flex: 1;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.violationCount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #ff3535;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+}
+
+/* ========================================================================
+   STATS GRID
+   ======================================================================== */
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.statBox {
+  background: #1f1f1f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.statLabel {
+  display: block;
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #00d9ff;
+}
+
+.statTrend {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+  color: #999;
+}
+
+/* ========================================================================
+   VIOLATION CARD
+   ======================================================================== */
+
+.violationCard {
+  background: #222;
+  border-left: 3px solid #ff3535;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.violationHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.violationType {
+  font-weight: 600;
+  color: #e0e0e0;
+  flex: 1;
+}
+
+.severityBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.severityBadge.critical {
+  background: #ff3535;
+  color: white;
+}
+
+.severityBadge.high {
+  background: #ffa500;
+  color: white;
+}
+
+.severityBadge.medium {
+  background: #ffcc00;
+  color: #000;
+}
+
+.severityBadge.low {
+  background: #4a4a4a;
+  color: #00d9ff;
+}
+
+.violationStatus {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  margin-left: 0.5rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  background: #333;
+  color: #a0a0a0;
+}
+
+.violationDetails {
+  font-size: 0.9rem;
+  color: #c0c0c0;
+  margin-bottom: 0.5rem;
+}
+
+.evidenceList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.evidenceBadge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  background: #333;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  color: #a0a0a0;
+}
+
+/* ========================================================================
+   MODERATION STATS
+   ======================================================================== */
+
+.moderationStats {
+  background: #1f1f1f;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.stat {
+  text-align: center;
+}
+
+.statNumber {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #00d9ff;
+  margin-bottom: 0.25rem;
+}
+
+.statName {
+  display: block;
+  font-size: 0.8rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ========================================================================
+   ACTION BUTTONS
+   ======================================================================== */
+
+.actionButtons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.actionBtn {
+  padding: 0.75rem 1rem;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #1f1f1f;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionBtn:hover {
+  background: #2a2a2a;
+  border-color: #00d9ff;
+  color: #00d9ff;
+}
+
+.actionBtn.warning {
+  border-color: #ffcc00;
+  color: #ffcc00;
+}
+
+.actionBtn.warning:hover {
+  background: rgba(255, 204, 0, 0.1);
+}
+
+.actionBtn.danger {
+  border-color: #ff3535;
+  color: #ff3535;
+}
+
+.actionBtn.danger:hover {
+  background: rgba(255, 53, 53, 0.1);
+}
+
+.actionBtn.success {
+  border-color: #00d900;
+  color: #00d900;
+}
+
+.actionBtn.success:hover {
+  background: rgba(0, 217, 0, 0.1);
+}
+
+/* ========================================================================
+   ECONOMIC METRICS
+   ======================================================================== */
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.metric {
+  background: #1f1f1f;
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.metric .label {
+  display: block;
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 0.5rem;
+}
+
+.metric .value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #00d9ff;
+}
+
+/* ========================================================================
+   SUPPLY INFO
+   ======================================================================== */
+
+.supplyInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.supplyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #1f1f1f;
+  border-radius: 4px;
+}
+
+.supplyRow span:first-child {
+  color: #999;
+}
+
+.amount {
+  font-weight: 600;
+  color: #00d9ff;
+}
+
+/* ========================================================================
+   PLAYERS LIST
+   ======================================================================== */
+
+.playersList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.playerItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #1f1f1f;
+  border-radius: 4px;
+}
+
+.playerName {
+  flex: 0 0 100px;
+  font-weight: 500;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+}
+
+.scoreBar {
+  flex: 1;
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.scoreFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.score {
+  flex: 0 0 40px;
+  text-align: right;
+  font-weight: 600;
+  color: #a0a0a0;
+  font-size: 0.85rem;
+}
+
+/* ========================================================================
+   ANOMALIES LIST
+   ======================================================================== */
+
+.anomaliesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.anomalyItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #1f1f1f;
+  border-radius: 4px;
+}
+
+.severity {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  min-width: 55px;
+  text-align: center;
+  color: white;
+}
+
+.type {
+  flex: 1;
+  color: #e0e0e0;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.timestamp {
+  color: #999;
+  font-size: 0.8rem;
+}
+
+/* ========================================================================
+   FLAGS LIST
+   ======================================================================== */
+
+.flagsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.flagItem {
+  background: #1f1f1f;
+  border-radius: 6px;
+  padding: 1rem;
+  border-left: 3px solid #00d9ff;
+}
+
+.flagHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.flagName {
+  flex: 1;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+}
+
+.rolloutPercent {
+  color: #a0a0a0;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.flagDescription {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #a0a0a0;
+}
+
+/* ========================================================================
+   ROLLOUT ITEMS
+   ======================================================================== */
+
+.rolloutsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rolloutItem {
+  background: #1f1f1f;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.rolloutHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.usersCount {
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+.progressBar {
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress {
+  height: 100%;
+  background: linear-gradient(90deg, #00d9ff, #00a8cc);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* ========================================================================
+   TESTS LIST & ITEMS
+   ======================================================================== */
+
+.testsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.testItem {
+  background: #1f1f1f;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.testHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.testName {
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.conversions {
+  color: #a0a0a0;
+  font-size: 0.9rem;
+}
+
+.groupsComparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.group {
+  background: #2a2a2a;
+  border-radius: 4px;
+  padding: 0.75rem;
+  text-align: center;
+  border-left: 2px solid #00d9ff;
+}
+
+.group span:first-child {
+  display: block;
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 0.25rem;
+}
+
+.group span:last-child {
+  display: block;
+  font-weight: 600;
+  color: #00d9ff;
+}
+
+/* ========================================================================
+   ANALYTICS TABLE & GRID
+   ======================================================================== */
+
+.analyticsTable {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.analyticsHeader {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: #1f1f1f;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.analyticsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  background: #222;
+  border-radius: 4px;
+  border-left: 2px solid #00d9ff;
+  font-size: 0.9rem;
+  color: #e0e0e0;
+}
+
+.analyticsRow:hover {
+  background: #2a2a2a;
+}
+
+/* Analytics Grid */
+.analyticsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.analyticsItem {
+  background: #1f1f1f;
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.analyticsItem .label {
+  display: block;
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 0.5rem;
+}
+
+.analyticsItem .value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #00d9ff;
+}
+
+/* ========================================================================
+   INVESTIGATION NOTES
+   ======================================================================== */
+
+.notesSection {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #333;
+}
+
+.notesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.noteItem {
+  background: #1f1f1f;
+  border-radius: 6px;
+  padding: 1rem;
+  border-left: 2px solid #00d9ff;
+}
+
+.noteAuthor {
+  display: block;
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 0.25rem;
+}
+
+.noteContent {
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.noteTime {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+/* ========================================================================
+   FORM & INPUT STYLES
+   ======================================================================== */
+
+.noteForm {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.noteInput {
+  flex: 1;
+  padding: 0.75rem;
+  background: #2a2a2a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.noteInput:focus {
+  outline: none;
+  border-color: #00d9ff;
+  box-shadow: 0 0 8px rgba(0, 217, 255, 0.2);
+}
+
+.submitBtn {
+  padding: 0.75rem 1.5rem;
+  background: #00d9ff;
+  border: none;
+  border-radius: 4px;
+  color: #000;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.submitBtn:hover {
+  background: #00a8cc;
+  transform: translateY(-2px);
+}
+
+/* ========================================================================
+   FOOTER
+   ======================================================================== */
+
+.footer {
+  text-align: center;
+  padding: 2rem;
+  border-top: 1px solid #333;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.footer p {
+  margin: 0;
+}
+
+/* ========================================================================
+   RESPONSIVE DESIGN
+   ======================================================================== */
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .header {
+    padding: 1.5rem 2rem;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .tabs {
+    padding: 0 2rem;
+  }
+
+  .tab {
+    padding: 0.75rem 1rem;
+  }
+
+  .tabContent {
+    padding: 1.5rem 2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0;
+  }
+
+  .header {
+    padding: 1rem 1.5rem;
+  }
+
+  .header h1 {
+    font-size: 1.25rem;
+  }
+
+  .header p {
+    font-size: 0.85rem;
+  }
+
+  .tabs {
+    padding: 0 1rem;
+    gap: 0;
+  }
+
+  .tab {
+    padding: 0.75rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .tabContent {
+    padding: 1rem 1.5rem;
+  }
+
+  .sectionHeader {
+    margin-bottom: 1.5rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .actionButtons {
+    grid-template-columns: 1fr;
+  }
+
+  .analyticsHeader,
+  .analyticsRow {
+    grid-template-columns: 1fr;
+  }
+
+  .noteForm {
+    flex-direction: column;
+  }
+
+  .footer {
+    padding: 1rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* ========================================================================
+   ANIMATIONS & EFFECTS
+   ======================================================================== */
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.slideIn {
+  animation: slideIn 0.3s ease;
+}
+
+/* ========================================================================
+   UTILITY CLASSES
+   ======================================================================== */
+
+.hidden {
+  display: none !important;
+}
+
+.mt1 {
+  margin-top: 0.5rem;
+}
+
+.mt2 {
+  margin-top: 1rem;
+}
+
+.mt3 {
+  margin-top: 1.5rem;
+}
+
+.mb1 {
+  margin-bottom: 0.5rem;
+}
+
+.mb2 {
+  margin-bottom: 1rem;
+}
+
+.mb3 {
+  margin-bottom: 1.5rem;
+}
+
+.gap1 {
+  gap: 0.5rem;
+}
+
+.gap2 {
+  gap: 1rem;
+}
+
+.gap3 {
+  gap: 1.5rem;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.textRight {
+  text-align: right;
+}
+
+.flexCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wFull {
+  width: 100%;
+}
+
+.hFull {
+  height: 100%;
+}
