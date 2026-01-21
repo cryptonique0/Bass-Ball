@@ -125,9 +125,9 @@ export const InvestigationDashboard: React.FC<InvestigationDashboardProps> = ({
       inv.playerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       inv.playerId.includes(searchQuery);
     const matchesStatus =
-      filterStatus === 'all' ||
+      (filterStatus as string) === 'all' ||
       inv.violations.some(
-        (v) => filterStatus === 'all' || v.status === filterStatus
+        (v) => (filterStatus as string) === 'all' || v.status === (filterStatus as any)
       );
     return matchesSearch && matchesStatus;
   });
