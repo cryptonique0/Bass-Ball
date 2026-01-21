@@ -55,7 +55,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (!(error instanceof CustomError)) {
       customError = new CustomError(
         error.message || 'Unknown error',
-        undefined,
+        ErrorCode.INTERNAL_ERROR,
         ErrorSeverity.HIGH,
         {
           originalError: error,
@@ -161,7 +161,7 @@ export const useErrorBoundary = () => {
       ? err
       : new CustomError(
         err.message || 'Unknown error',
-        undefined,
+        ErrorCode.INTERNAL_ERROR,
         ErrorSeverity.HIGH,
         { originalError: err }
       );
