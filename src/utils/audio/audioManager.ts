@@ -1,0 +1,1 @@
+/**Audio Manager*/ export class AudioManager { private sounds: Map<string, any> = new Map(); playSound(soundId: string): void { const sound = this.sounds.get(soundId); if (sound) { sound.play(); } } stopSound(soundId: string): void { const sound = this.sounds.get(soundId); if (sound) { sound.stop(); } } setVolume(soundId: string, volume: number): void {} }
