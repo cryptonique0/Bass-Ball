@@ -26,7 +26,8 @@
       "@/app/*": ["./app/*"],
       "@/components/*": ["./components/*"],
       "@/hooks/*": ["./hooks/*"],
-      "@/lib/*": ["./lib/*"]
+      "@/lib/*": ["./lib/*"],
+      "@/services/*": ["./services/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
