@@ -1,0 +1,453 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #f1f5f9;
+  padding: 2rem;
+  font-family: var(--font-geist-sans);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: slideDown 0.6s ease-out;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #64c8ff 0%, #00d9ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  font-size: 1.1rem;
+  color: #cbd5e1;
+}
+
+.tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  animation: slideUp 0.6s ease-out;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: rgba(30, 41, 59, 0.5);
+  border: 2px solid transparent;
+  color: #cbd5e1;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.tab:hover {
+  border-color: #64c8ff;
+  color: #64c8ff;
+}
+
+.tab.active {
+  background: linear-gradient(135deg, #64c8ff 0%, #00d9ff 100%);
+  color: #0f172a;
+  border-color: #64c8ff;
+}
+
+.section {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(100, 200, 255, 0.1);
+  border-radius: 1rem;
+  padding: 2rem;
+  animation: slideUp 0.6s ease-out;
+}
+
+.section h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #64c8ff;
+}
+
+.section h3 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: #e2e8f0;
+}
+
+.tierGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.tierCard {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+  border: 2px solid rgba(100, 200, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tierCard:hover {
+  border-color: #64c8ff;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(100, 200, 255, 0.1);
+}
+
+.tierCard.selected {
+  background: linear-gradient(135deg, rgba(100, 200, 255, 0.1) 0%, rgba(0, 217, 255, 0.1) 100%);
+  border-color: #64c8ff;
+  box-shadow: 0 0 30px rgba(100, 200, 255, 0.2);
+}
+
+.tierIcon {
+  font-size: 3rem;
+  text-align: center;
+}
+
+.tierCard h3 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.tierCard p {
+  color: #94a3b8;
+  margin: 0;
+}
+
+.price {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #64c8ff;
+}
+
+.price span {
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.feature {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shopLayout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.itemsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.shopItem {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 200, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.shopItem:hover {
+  border-color: #64c8ff;
+  transform: scale(1.05);
+}
+
+.itemIcon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.shopItem h4,
+.shopItem p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.rarity {
+  color: #64c8ff;
+  font-weight: 600;
+}
+
+.cartPanel {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 200, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  height: fit-content;
+  position: sticky;
+  top: 2rem;
+}
+
+.cartPanel h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.cartItem {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  border-bottom: 1px solid rgba(100, 200, 255, 0.05);
+}
+
+.cartTotal {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(100, 200, 255, 0.1);
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.finalTotal {
+  font-weight: 700;
+  color: #64c8ff;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+.seasonInfo {
+  background: rgba(30, 41, 59, 0.6);
+  border-left: 4px solid #64c8ff;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.seasonInfo h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+}
+
+.seasonMeta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #94a3b8;
+  flex-wrap: wrap;
+}
+
+.progressCard {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 200, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.levelInfo {
+  display: flex;
+  gap: 2rem;
+  margin: 1rem 0;
+  font-weight: 600;
+  color: #64c8ff;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background: rgba(100, 200, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #64c8ff 0%, #00d9ff 100%);
+  transition: width 0.3s ease;
+}
+
+.challengesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.challengesGrid h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.challengeItem {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 200, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.challengeIcon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.challengeItem h5,
+.challengeItem p {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.reward {
+  color: #64c8ff;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.difficulty {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: rgba(100, 200, 255, 0.1);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: #64c8ff;
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.statCard {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(100, 200, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.statCard h4 {
+  margin: 0 0 1rem 0;
+  color: #64c8ff;
+  font-size: 1.1rem;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(100, 200, 255, 0.05);
+  font-size: 0.9rem;
+}
+
+.stat:last-child {
+  border-bottom: none;
+}
+
+.stat span {
+  color: #94a3b8;
+}
+
+.stat strong {
+  color: #64c8ff;
+  font-weight: 700;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  background: rgba(100, 200, 255, 0.1);
+  border: 1px solid #64c8ff;
+  color: #64c8ff;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.btn:hover {
+  background: #64c8ff;
+  color: #0f172a;
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #64c8ff 0%, #00d9ff 100%);
+  border: none;
+  color: #0f172a;
+  width: 100%;
+}
+
+.btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(100, 200, 255, 0.3);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .tierGrid,
+  .itemsGrid,
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .shopLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .cartPanel {
+    position: relative;
+    top: 0;
+  }
+
+  .tabs {
+    flex-direction: column;
+  }
+
+  .header h1 {
+    font-size: 1.8rem;
+  }
+}
