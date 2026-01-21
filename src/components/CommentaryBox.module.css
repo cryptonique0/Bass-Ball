@@ -1,0 +1,274 @@
+/**
+ * CommentaryBox Styles
+ */
+
+.container {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border-radius: 12px;
+  padding: 20px;
+  color: #ffffff;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  font-family: 'Arial', sans-serif;
+  min-height: 300px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.title {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.commentatorInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.commentatorName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffd700;
+}
+
+.experience {
+  font-size: 12px;
+  color: #aed6f1;
+}
+
+.commentaryDisplay {
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 4px solid #ffd700;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+}
+
+.commentaryText {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.6;
+  font-weight: 500;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.commentaryText.active {
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  font-size: 19px;
+}
+
+.commentaryText.inactive {
+  color: #b0b0b0;
+  font-style: italic;
+}
+
+.controls {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.button.playing {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.volumeControl label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.volumeSlider {
+  width: 100px;
+  cursor: pointer;
+}
+
+.commentatorSelector {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.selectorTitle {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd700;
+}
+
+.commentatorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.commentatorButton {
+  background: rgba(102, 126, 234, 0.3);
+  border: 2px solid rgba(102, 126, 234, 0.5);
+  color: #ffffff;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 13px;
+  transition: all 0.3s ease;
+}
+
+.commentatorButton:hover {
+  background: rgba(102, 126, 234, 0.5);
+  border-color: #667eea;
+  transform: translateY(-2px);
+}
+
+.commentatorButton.active {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  color: #1e3c72;
+  border-color: #ffd700;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.history {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.historyTitle {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd700;
+}
+
+.historyList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.historyItem {
+  display: flex;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.timestamp {
+  color: #aed6f1;
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.historyText {
+  color: #e0e0e0;
+  flex: 1;
+}
+
+.clearButton {
+  background: rgba(244, 67, 54, 0.7);
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.clearButton:hover {
+  background: rgba(244, 67, 54, 0.9);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+
+  .commentaryText {
+    font-size: 16px;
+  }
+
+  .commentatorGrid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .commentatorInfo {
+    align-items: flex-start;
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
