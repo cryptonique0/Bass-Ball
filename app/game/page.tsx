@@ -46,7 +46,7 @@ export default function GamePage() {
       let minDist = Infinity;
 
       teammates.forEach((player) => {
-        if (player.id === gameState.selectedPlayer?.id) return;
+        if (!gameState.selectedPlayer || player.id === gameState.selectedPlayer.id) return;
         const dist = Math.hypot(
           player.x - gameState.selectedPlayer.x,
           player.y - gameState.selectedPlayer.y
