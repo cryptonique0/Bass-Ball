@@ -10,7 +10,7 @@ import { retry, CircuitBreaker, AGGRESSIVE_RETRY_CONFIG } from '@/lib/retry';
 /**
  * Comprehensive demo showing all error handling features working together
  */
-export function ErrorHandlingDemo() {
+function ErrorHandlingDemo() {
   const recovery = useErrorRecovery({
     maxRecoveryAttempts: 3,
     enableCache: true,
