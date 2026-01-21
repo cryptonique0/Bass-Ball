@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Web3Provider } from '@/components/Web3Provider';
+import { ErrorHandlingProvider } from '@/components/ErrorHandlingProvider';
 
 export const metadata: Metadata = {
   title: 'Bass Ball - Football on Base Chain',
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Web3Provider>{children}</Web3Provider>
+        <ErrorHandlingProvider>
+          <Web3Provider>{children}</Web3Provider>
+        </ErrorHandlingProvider>
       </body>
     </html>
   );
