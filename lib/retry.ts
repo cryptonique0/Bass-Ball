@@ -226,7 +226,7 @@ export class CircuitBreaker {
       } else {
         throw new CustomError(
           'Circuit breaker is open',
-          ErrorType.SERVICE_ERROR,
+          ErrorCode.PROVIDER_UNAVAILABLE,
           ErrorSeverity.HIGH,
           { state: this.state }
         );
