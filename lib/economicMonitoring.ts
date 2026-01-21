@@ -45,6 +45,15 @@ export interface InflationIndicator {
   timestamp: number;
 }
 
+export interface SuspiciousPattern {
+  id: string;
+  type: 'rapid_accumulation' | 'reward_farming' | 'unusual_spending' | 'wash_trading' | 'price_manipulation';
+  confidence: number; // 0-100
+  evidence: string[];
+  detectedAt: number;
+  resolved: boolean;
+}
+
 export interface PlayerEconomicProfile {
   playerId: string;
   totalEarnings: number;
@@ -53,15 +62,6 @@ export interface PlayerEconomicProfile {
   lastActivityTime: number;
   suspiciousPatterns: SuspiciousPattern[];
   economicScore: number; // 0-100, higher = healthier
-}
-
-export interface SuspiciousPattern {
-  id: string;
-  type: 'rapid_accumulation' | 'reward_farming' | 'unusual_spending' | 'wash_trading' | 'price_manipulation';
-  confidence: number; // 0-100
-  evidence: string[];
-  detectedAt: number;
-  resolved: boolean;
 }
 
 export interface TransactionAnomaly {
