@@ -1,0 +1,1 @@
+/**Mock Services*/ export class MockPlayerService { getPlayer(id: string): any { return { id, name: 'Mock Player', rating: 80 }; } updatePlayer(id: string, updates: any): boolean { return true; } deletePlayer(id: string): boolean { return true; } }
