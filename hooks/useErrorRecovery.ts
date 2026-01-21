@@ -100,57 +100,6 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
 
         case 'FAILED_RECOVERY':
           return {
-            ...state,
-            isRecovering: false,
-            recoveryAttempts: state.recoveryAttempts + 1,
-            lastError: action.error,
-            canRecover: state.recoveryAttempts < finalConfig.maxRecoveryAttempts,
-          };
-
-        case 'RESET':
-          return {
-            isRecovering: false,
-            strategy: null,
-            lastError: null,
-            recoveryAttempts: 0,
-            lastRecoveryTime: null,
-            canRecover: true,
-          };
-
-        default:
-          return state;
-      }
-    },
-    {
-      isRecovering: false,
-      strategy: null,
-      lastError: null,
-      recoveryAttempts: 0,
-      lastRecoveryTime: null,
-      canRecover: true,
-    }
-  );
-
-  /**
-   * Get or create circuit breaker
-   */
-  const getCircuitBreaker = useCallback((id: string): CircuitBreaker => {
-    if (!circuitBreakerRef.current.has(id)) {
-      circuitBreakerRef.current.set(
-        id,
-        new CircuitBreaker(finalConfig.circuitBreakerThreshold, 60000)
-      );
-    }
-    return circuitBreakerRef.current.get(id)!;
-  }, [finalConfig.circuitBreakerThreshold]);
-
-  /**
-   * Get cached data
-   */
-  const getCached = useCallback((key: string): any | null => {
-    if (!finalConfig.enableCache) return null;
-
-    const cached = cacheRef.current.get(key);
     if (!cached) return null;
 
     // Cache valid for 5 minutes
