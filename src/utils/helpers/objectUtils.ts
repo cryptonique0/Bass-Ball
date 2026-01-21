@@ -1,0 +1,1 @@
+/**Utility: Object Utils*/ export function deepClone<T>(obj: T): T { return JSON.parse(JSON.stringify(obj)); } export function merge<T extends Record<string, any>>(obj1: T, obj2: T): T { return { ...obj1, ...obj2 }; }
