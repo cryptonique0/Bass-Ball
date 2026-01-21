@@ -67,6 +67,7 @@
     "**/*.spec.ts",
     "jest.config.js",
     "ALL_EVM_WALLETS_EXAMPLES.tsx",
-    "CROSS_CHAIN_SWAP_COMPONENTS.tsx"
+    "CROSS_CHAIN_SWAP_COMPONENTS.tsx",
+    "GAS_OPTIMIZATION_COMPONENTS.tsx"
   ]
 }
