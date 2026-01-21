@@ -93,7 +93,7 @@ export const PlayerStats = ({
       )}
     </div>
   );
-}
+};
 
 interface TokenBalanceProps {
   tokenAddress?: string;
