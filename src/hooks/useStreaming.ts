@@ -27,10 +27,12 @@ export function useStreaming(userId: string) {
 
   const startStream = useCallback((accountId: string, streamData: Partial<LiveStream>) => {
     const stream = streamingService.startStream(userId, accountId, streamData);
-    setCurrentStream(stream);
-    setLiveStreams(prev => [...prev, stream]);
-    setAnalytics(streamingService.getAnalytics(stream.id) || null);
-    return stream;
+    if (stream) {
+      setCurrentStream(stream);
+      setLiveStreams(prev => [...prev, stream]);
+      setAnalytics(streamingService.getAnalytics(stream.id) || null);
+      return stream;
+    }
   }, [userId]);
 
   const endStream = useCallback(() => {
