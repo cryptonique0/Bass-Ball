@@ -1,0 +1,1 @@
+/**Input Validator*/ export class InputValidator { validatePlayerName(name: string): boolean { return name.length >= 3 && name.length <= 50; } validateEmail(email: string): boolean { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); } sanitizeInput(input: string): string { return input.replace(/[<>]/g, ''); } }
