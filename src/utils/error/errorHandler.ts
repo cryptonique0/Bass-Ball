@@ -1,0 +1,1 @@
+/**Error Handler*/ export class ErrorHandler { handle(error: Error): void { console.error(error); } logError(error: Error, context: string): void {} retryOperation(fn: () => void, maxRetries: number = 3): void { for (let i = 0; i < maxRetries; i++) { try { fn(); break; } catch { if (i === maxRetries - 1) throw error; } } } }
