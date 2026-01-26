@@ -252,7 +252,7 @@ function LeaderboardTab({ leaderboard }: { leaderboard: Array<{
 /**
  * Leaderboard Row Component
  */
-function LeaderboardRow({ metrics, rank }: { metrics: WarMetrics; rank: number }) {
+function LeaderboardRow({ metrics, rank }: { metrics: { clubId: string; wins: number; losses: number; tier: WarTier; rating: number }; rank: number }) {
   const getTierColor = (tier: string) => {
     const colors: Record<string, string> = {
       bronze: 'bg-amber-600',
