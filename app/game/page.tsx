@@ -85,14 +85,17 @@ export default function GamePage() {
           <div className="space-y-4">
             {/* Match Controls */}
             <MatchControls
-              gameRunning={gameRunning}
-              onStart={startMatch}
-              onPause={pauseMatch}
-              onResume={resumeMatch}
-              onEnd={endMatch}
-              onPass={handlePassClick}
+              selectedPlayer={gameState?.selectedPlayer || null}
+              gameTime={gameTime}
+              isPaused={!gameRunning}
               onShoot={shoot}
-              hasSelectedPlayer={!!gameState?.selectedPlayer}
+              onPass={handlePassClick}
+              onTackle={(playerId) => {}}
+              onSprint={() => {}}
+              canSprint={true}
+              ballX={gameState?.ball?.x || 0}
+              ballY={gameState?.ball?.y || 0}
+              team="home"
             />
 
             {/* Selected Player Info */}
