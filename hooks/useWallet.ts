@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAccount, useConnect, useDisconnect, useNetwork, useSwitchNetwork } from 'wagmi';
 import { base, baseSepolia } from 'wagmi/chains';
 
+/** Wallet connection states */
 export type WalletConnectionState = 
   | 'disconnected' 
   | 'connecting' 
@@ -10,17 +11,41 @@ export type WalletConnectionState =
   | 'wrong_network' 
   | 'error';
 
+/** Complete wallet state */
 export interface WalletState {
+  /** Current connection state */
   state: WalletConnectionState;
+  /** Connected wallet address */
   address?: string;
+  /** Current chain ID */
   chainId?: number;
+  /** Error message if state is 'error' */
   error?: string;
+  /** Whether wallet is on a supported network */
   isCorrectNetwork: boolean;
+  /** Whether user needs to manually switch networks */
   requiresNetworkSwitch: boolean;
 }
 
 /**
  * Enhanced wallet hook with persistent reconnection and network validation
+ * 
+ * Features:
+ * - Automatic reconnection on page load
+ * - Network validation (Base/Base Sepolia)
+ * - Persistent connector storage
+ * - Type-safe wallet operations
+ * 
+ * @returns Wallet state and control methods
+ * 
+ * @example
+ * ```tsx
+ * const { address, isCorrectNetwork, connect, disconnect } = useWallet();
+ * 
+ * if (!address) {
+ *   return <button onClick={() => connect()}>Connect Wallet</button>;
+ * }
+ * ```
  */
 export const useWallet = (): WalletState & {
   isSwitching: boolean;
