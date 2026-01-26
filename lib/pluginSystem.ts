@@ -40,28 +40,67 @@ export interface PluginHooks {
   renderUI?: () => React.ReactNode;
 }
 
+/** Type-safe event handler for plugins */
+export type EventHandler = (data: unknown) => void | Promise<void>;
+
+/** Type-safe hook handler for plugins */
+export type HookHandler = (data?: unknown) => unknown | Promise<unknown>;
+
 import { CustomError, ErrorCode, ErrorSeverity } from '@/lib/errors';
 import { getErrorHandler, logBreadcrumb } from '@/lib/errorHandler';
 
+/**
+ * PluginSystem - Core extensibility framework
+ * 
+ * Provides a robust plugin architecture for third-party extensions with:
+ * - Type-safe event handling and hooks
+ * - Dependency management and validation
+ * - Isolated plugin contexts with storage
+ * - Comprehensive error handling
+ * 
+ * @example
+ * ```ts
+ * await pluginSystem.register(myPlugin);
+ * pluginSystem.emit('game.start', { matchId: '123' });
+ * ```
+ */
 class PluginSystem {
   private plugins: Map<string, Plugin> = new Map();
-  private hooks: Map<string, Set<Function>> = new Map();
-  private eventBus: Map<string, Set<Function>> = new Map();
+  private hooks: Map<string, Set<HookHandler>> = new Map();
+  private eventBus: Map<string, Set<EventHandler>> = new Map();
   private storage: Map<string, Map<string, unknown>> = new Map();
   private errorHandler = getErrorHandler();
 
-  // Register a plugin
+  /**
+   * Register a new plugin in the system
+   * 
+   * Validates the plugin manifest, checks dependencies, initializes the plugin
+   * with an isolated context, and handles any initialization errors.
+   * 
+   * @param plugin - The plugin to register
+   * @returns Promise<boolean> - True if registration successful, false otherwise
+   * 
+   * @throws {CustomError} If plugin initialization fails catastrophically
+   * 
+   * @example
+   * ```ts
+   * const success = await pluginSystem.register({
+   *   manifest: { id: 'my-plugin', name: 'My Plugin', version: '1.0.0', type: 'analytics', author: 'Me' },
+   *   init: async (context) => { console.log('Initialized!'); }
+   * });
+   * ```
+   */
   async register(plugin: Plugin): Promise<boolean> {
     const { id } = plugin.manifest;
 
     if (this.plugins.has(id)) {
-      console.warn(`Plugin ${id} already registered`);
+      console.warn(`[PluginSystem] Plugin "${id}" is already registered`);
       return false;
     }
 
     // Validate manifest
     if (!this.validateManifest(plugin.manifest)) {
-      console.error(`Invalid manifest for plugin ${id}`);
+      console.error(`[PluginSystem] Invalid manifest for plugin "${id}"`);
       return false;
     }
 
@@ -98,11 +137,25 @@ class PluginSystem {
   }
 
   /**
-   * Unregister a plugin
+   * Unregister and cleanup a plugin
+   * 
+   * Calls the plugin's destroy lifecycle hook, removes it from the registry,
+   * and cleans up its storage.
+   * 
+   * @param pluginId - The ID of the plugin to unregister
+   * @returns Promise<boolean> - True if unregistration successful, false if plugin not found
+   * 
+   * @example
+   * ```ts
+   * await pluginSystem.unregister('my-plugin');
+   * ```
    */
   async unregister(pluginId: string): Promise<boolean> {
     const plugin = this.plugins.get(pluginId);
-    if (!plugin) return false;
+    if (!plugin) {
+      console.warn(`[PluginSystem] Cannot unregister: plugin "${pluginId}" not found`);
+      return false;
+    }
 
     try {
       if (plugin.destroy) {
@@ -153,18 +206,34 @@ class PluginSystem {
 
   /**
    * Register a hook handler
+   * 
+   * Hooks allow plugins to intercept and modify data at key execution points.
+   * 
+   * @param hookName - Name of the hook (e.g., 'beforeMatchStart')
+   * @param handler - Function to execute when hook is triggered
+   * 
+   * @example
+   * ```ts
+   * pluginSystem.registerHook('beforeMatchStart', async (matchData) => {
+   *   return { ...matchData, modified: true };
+   * });
+   * ```
    */
-  registerHook(hookName: string, handler: Function): void {
+  registerHook(hookName: string, handler: HookHandler): void {
     if (!this.hooks.has(hookName)) {
       this.hooks.set(hookName, new Set());
     }
     this.hooks.get(hookName)!.add(handler);
+    logBreadcrumb('plugin', 'info', `Hook registered: ${hookName}`, { hookName });
   }
 
   /**
    * Unregister a hook handler
+   * 
+   * @param hookName - Name of the hook
+   * @param handler - The exact handler function to remove
    */
-  unregisterHook(hookName: string, handler: Function): void {
+  unregisterHook(hookName: string, handler: HookHandler): void {
     const handlers = this.hooks.get(hookName);
     if (handlers) {
       handlers.delete(handler);
@@ -172,7 +241,18 @@ class PluginSystem {
   }
 
   /**
-   * Emit event to all plugins
+   * Emit an event to all registered plugins and subscribers
+   * 
+   * Events are broadcast to both the event bus subscribers and plugins
+   * that implement the onEvent handler.
+   * 
+   * @param event - Event name (e.g., 'match.end', 'player.scored')
+   * @param data - Optional event payload
+   * 
+   * @example
+   * ```ts
+   * pluginSystem.emit('match.end', { score: { home: 2, away: 1 } });
+   * ```
    */
   emit(event: string, data?: unknown): void {
     // Notify via event bus
@@ -213,8 +293,20 @@ class PluginSystem {
 
   /**
    * Subscribe to events
+   * 
+   * @param event - Event name to listen for
+   * @param handler - Callback function to execute when event is emitted
+   * @returns Unsubscribe function
+   * 
+   * @example
+   * ```ts
+   * const unsubscribe = pluginSystem.subscribe('match.end', (data) => {
+   *   console.log('Match ended:', data);
+   * });
+   * // Later: unsubscribe();
+   * ```
    */
-  subscribe(event: string, handler: Function): () => void {
+  subscribe(event: string, handler: EventHandler): () => void {
     if (!this.eventBus.has(event)) {
       this.eventBus.set(event, new Set());
     }
