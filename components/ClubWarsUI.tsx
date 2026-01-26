@@ -275,7 +275,7 @@ function LeaderboardRow({ metrics, rank }: { metrics: { clubId: string; wins: nu
     <tr className="border-b border-slate-700 hover:bg-slate-700/30 transition">
       <td className="px-6 py-4 text-white font-bold text-lg">{getMedalIcon(rank)}</td>
       <td className="px-6 py-4">
-        <div className="text-white font-semibold">{metrics.clubName || 'Club ' + metrics.clubId}</div>
+        <div className="text-white font-semibold">{metrics.clubId}</div>
       </td>
       <td className="px-6 py-4">
         <span className={`px-3 py-1 rounded-full text-xs font-bold text-white ${getTierColor(metrics.tier)}`}>
