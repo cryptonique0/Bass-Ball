@@ -3,33 +3,81 @@
 import React, { useState, useEffect } from 'react';
 import { MatchValidator, ValidationResult } from './matchValidator';
 
+/**
+ * Guest Mode System
+ * 
+ * Allows players to try the game without creating an account.
+ * Guest data is stored locally and can be migrated to a full account later.
+ * 
+ * Features:
+ * - Local profile storage
+ * - Match history tracking
+ * - Statistics persistence
+ * - Account migration capability
+ * 
+ * @example
+ * ```ts
+ * const guest = GuestModeManager.createGuestPlayer('Player123');
+ * GuestModeManager.recordMatch('TeamA', 'TeamB', 2, 1, 'home', 1, 1, 90);
+ * const stats = guest.stats;
+ * ```
+ */
+
+/**
+ * Guest player profile
+ */
 export interface GuestPlayer {
+  /** Unique guest player ID */
   id: string;
+  /** Player's chosen username */
   username: string;
+  /** Account creation timestamp */
   createdAt: number;
+  /** Player statistics */
   stats: {
+    /** Total matches played */
     matchesPlayed: number;
+    /** Matches won */
     wins: number;
+    /** Matches lost */
     losses: number;
+    /** Matches drawn */
     draws: number;
+    /** Total goals scored */
     totalGoals: number;
+    /** Total assists */
     totalAssists: number;
   };
+  /** Complete match history */
   matchHistory: MatchRecord[];
 }
 
+/**
+ * Individual match record
+ */
 export interface MatchRecord {
+  /** Unique match ID */
   id: string;
+  /** Match date timestamp */
   date: number;
+  /** Home team name */
   homeTeam: string;
+  /** Away team name */
   awayTeam: string;
+  /** Home team final score */
   homeScore: number;
+  /** Away team final score */
   awayScore: number;
+  /** Which team the player was on */
   playerTeam: 'home' | 'away';
+  /** Goals scored by player */
   playerGoals: number;
+  /** Assists by player */
   playerAssists: number;
+  /** Match result for player */
   result: 'win' | 'loss' | 'draw';
-  duration: number; // in minutes
+  /** Match duration in minutes */
+  duration: number;
 }
 
 const GUEST_STORAGE_KEY = 'bass_ball_guest_player';
@@ -37,9 +85,17 @@ const MATCH_HISTORY_KEY = 'bass_ball_match_history';
 
 /**
  * Guest Mode Manager
- * Handles guest player creation, profile management, and match history
+ * 
+ * Handles guest player creation, profile management, and match history.
+ * All data is stored in browser localStorage.
  */
 export class GuestModeManager {
+  /**
+   * Create a new guest player profile
+   * 
+   * @param username - Chosen username for the guest player
+   * @returns Newly created guest player profile
+   */
   static createGuestPlayer(username: string): GuestPlayer {
     const id = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const player: GuestPlayer = {
