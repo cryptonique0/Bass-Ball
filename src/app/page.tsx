@@ -4,6 +4,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import { useMatchStore } from '@/store/useMatchStore';
 import Link from 'next/link';
 import WalletButton from '@/components/WalletButton';
+import NetworkStatusContainer from '@/components/NetworkStatusContainer';
 import { useState } from 'react';
 
 const HomePage = () => {
@@ -23,6 +24,7 @@ const HomePage = () => {
             <h1 className="text-2xl font-bold text-white">Bass Ball</h1>
           </div>
           <div className="flex gap-4 items-center">
+            <NetworkStatusContainer />
             {isReady && (
               <>
                 <Link href="/game" className="text-gray-300 hover:text-white transition-colors">
