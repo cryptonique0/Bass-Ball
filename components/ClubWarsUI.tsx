@@ -60,7 +60,7 @@ export function ClubWarsUI() {
 
       if (userClubId) {
         const clubWars = activeWars.filter(w => 
-          w.registeredClubs?.includes(userClubId)
+          w.registeredClubs?.has(userClubId)
         );
         setMyWars(clubWars);
       }
