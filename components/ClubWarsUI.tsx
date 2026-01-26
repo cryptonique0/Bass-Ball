@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ClubWarsManager, WarMetrics, ClubWar } from '@/lib/clubWarsSystem';
+import { ClubWarsManager, ClubWar, WarTier } from '@/lib/clubWarsSystem';
 import { ClanManager } from '@/lib/clanSystem';
 import { Trophy, Swords, TrendingUp, Calendar, Users, Award } from 'lucide-react';
 
