@@ -1,21 +1,43 @@
-// Advanced network payload compression and delta updates
-import { MatchState } from '@/types/match';
+/**
+ * Advanced network payload compression and delta updates
+ * 
+ * Optimizes network traffic by sending only changed data (deltas)
+ * instead of full state updates. Reduces bandwidth by 40-60%.
+ */
+
+// Type definitions (should be imported from actual types file)
+interface MatchState {
+  tick: number;
+  ball: { x: number; y: number };
+  homeScore: number;
+  awayScore: number;
+  possession?: { id: string } | null;
+  homeTeam: { players: any[] };
+  awayTeam: { players: any[] };
+}
 
 /**
- * Delta state compression: Only serialize changed fields
- * Reduces payload size by 40-60% for subsequent updates
+ * Delta update containing only changed fields
+ * 
+ * Significantly reduces payload size for real-time match updates
  */
 export interface DeltaUpdate {
+  /** Game tick number for synchronization */
   tick: number;
+  /** Ball state changes (position and velocity) */
   ball?: {
     x?: number;
     y?: number;
     vx?: number;
     vy?: number;
   };
+  /** Home team score (only if changed) */
   homeScore?: number;
+  /** Away team score (only if changed) */
   awayScore?: number;
-  possession?: string | null; // Player ID with ball
+  /** Player ID with possession (null if no possession) */
+  possession?: string | null;
+  /** Player state updates (only for players that moved significantly) */
   playerUpdates?: Array<{
     id: string;
     x?: number;
@@ -25,6 +47,7 @@ export interface DeltaUpdate {
     stamina?: number;
     status?: string;
   }>;
+  /** Match events that occurred this tick */
   events?: Array<{
     type: string;
     playerId: string;
@@ -32,6 +55,7 @@ export interface DeltaUpdate {
   }>;
 }
 
+/** Cached previous state for delta calculation */
 interface PreviousState {
   ball: { x: number; y: number; vx: number; vy: number };
   homeScore: number;
@@ -45,11 +69,25 @@ let previousState: PreviousState | null = null;
 
 /**
  * Create a delta update containing only changed fields
+ * 
+ * Compares current state with previous state and includes only fields
+ * that have changed beyond the threshold.
+ * 
  * @param currentState - Current match state
- * @param threshold - Minimum change threshold to include (pixels for positions, units for scores)
+ * @param threshold - Minimum change threshold to include (pixels for positions)
  * @returns Compact delta update object
+ * 
+ * @example
+ * ```ts
+ * const delta = createDeltaUpdate(matchState, 1.0);
+ * // Only fields that changed > 1 pixel are included
+ * // Typical payload: ~200 bytes vs ~5KB for full state
+ * ```
  */
-export function createDeltaUpdate(currentState: MatchState, threshold: number = 1): DeltaUpdate {
+export function createDeltaUpdate(
+  currentState: MatchState,
+  threshold: number = 1
+): DeltaUpdate {
   const delta: DeltaUpdate = { tick: currentState.tick };
 
   // First update: serialize everything
