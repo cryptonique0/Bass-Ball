@@ -1,23 +1,43 @@
 /**
  * Achievements and badge system
+ * 
+ * Tracks player progress toward various milestones and awards badges
+ * for accomplishments in different categories.
  */
 
 export type AchievementCategory = 'goals' | 'defense' | 'teamwork' | 'progression' | 'milestones' | 'special';
 
+/** Achievement rarity levels */
+export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+
+/** Achievement definition */
 export interface Achievement {
+  /** Unique achievement identifier */
   id: string;
+  /** Display name */
   name: string;
+  /** Description of what is required */
   description: string;
+  /** Category for organization */
   category: AchievementCategory;
+  /** Icon or emoji */
   icon: string;
+  /** Points awarded when unlocked */
   points: number;
+  /** Requirement to unlock */
   requirement: {
+    /** Type of requirement */
     type: string;
+    /** Target value */
     value: number;
   };
-  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  /** Rarity level */
+  rarity: AchievementRarity;
+  /** Hidden achievement (not shown until unlocked) */
+  hidden?: boolean;
 }
 
+/** Player's progress toward an achievement */
 export interface PlayerAchievement {
   playerId: string;
   achievementId: string;
@@ -108,37 +128,73 @@ const ACHIEVEMENTS: Record<string, Achievement> = {
   },
 };
 
+/**
+ * Achievement tracking and management service
+ */
 export class AchievementService {
   private playerAchievements: Map<string, PlayerAchievement[]> = new Map();
+  private listeners: Map<string, Array<(achievement: Achievement) => void>> = new Map();
 
   /**
-   * Get all achievements
+   * Get all available achievements
    */
   getAllAchievements(): Achievement[] {
     return Object.values(ACHIEVEMENTS);
   }
 
   /**
+   * Get achievements by category
+   */
+  getAchievementsByCategory(category: AchievementCategory): Achievement[] {
+    return this.getAllAchievements().filter(a => a.category === category);
+  }
+
+  /**
+   * Get achievements by rarity
+   */
+  getAchievementsByRarity(rarity: AchievementRarity): Achievement[] {
+    return this.getAllAchievements().filter(a => a.rarity === rarity);
+  }
+
+  /**
    * Get achievement by ID
+   * @throws {Error} If achievement ID is invalid
    */
   getAchievement(id: string): Achievement | undefined {
+    if (!id || typeof id !== 'string') {
+      throw new Error('Invalid achievement ID');
+    }
     return ACHIEVEMENTS[id];
   }
 
   /**
-   * Check if player has achievement
+   * Check if player has unlocked an achievement
    */
   hasAchievement(playerId: string, achievementId: string): boolean {
+    if (!playerId || !achievementId) return false;
     const achievements = this.playerAchievements.get(playerId) || [];
     return achievements.some((a) => a.achievementId === achievementId && a.progress === 100);
   }
 
   /**
-   * Unlock achievement
+   * Get player's progress toward an achievement (0-100)
+   */
+  getProgress(playerId: string, achievementId: string): number {
+    const achievements = this.playerAchievements.get(playerId) || [];
+    const achievement = achievements.find(a => a.achievementId === achievementId);
+    return achievement?.progress ?? 0;
+  }
+
+  /**
+   * Unlock achievement for a player
+   * @returns True if achievement was newly unlocked, false otherwise
    */
   unlockAchievement(playerId: string, achievementId: string): boolean {
     const achievement = ACHIEVEMENTS[achievementId];
-    if (!achievement) return false;
+    if (!achievement) {
+      console.warn(`[AchievementService] Unknown achievement: ${achievementId}`);
+      return false;
+    }
 
     if (!this.playerAchievements.has(playerId)) {
       this.playerAchievements.set(playerId, []);
