@@ -1,55 +1,77 @@
 /**
  * Tactical System
  * Manages team formations, tactical sliders, and strategic configurations
+ * 
+ * Provides comprehensive tactical management including:
+ * - Formation templates and custom formations
+ * - Real-time tactical adjustments
+ * - Tactical presets and analytics
+ * - Player role assignments
  */
 
+/** Supported formation types */
+type FormationType = '433' | '442' | '352' | '532' | '4231' | '3421' | 'custom';
+
+/** Team formation configuration */
 interface TeamFormation {
   formationId: string;
   name: string;
-  type: '433' | '442' | '352' | '532' | '4231' | '3421' | 'custom';
+  type: FormationType;
   description: string;
-  positions: Map<string, FormationPosition>; // Position -> FormationPosition
+  /** Map of position name to position configuration */
+  positions: Map<string, FormationPosition>;
   createdAt: number;
   isDefault: boolean;
 }
 
+/** Player position within formation */
 interface FormationPosition {
+  /** Full position name (e.g., "Center Forward") */
   positionName: string;
+  /** Abbreviated name (e.g., "CF") */
   shortName: string;
-  x: number; // Field position (0-100)
-  y: number; // Field position (0-100)
+  /** X coordinate on field (0-100, left to right) */
+  x: number;
+  /** Y coordinate on field (0-100, defense to attack) */
+  y: number;
+  /** Position responsibilities */
   responsibilities: string[];
+  /** Ideal player attributes for this position */
   idealPlayerType: string;
 }
 
+/**
+ * Tactical sliders for fine-tuning team behavior
+ * All values are 0-100 range
+ */
 interface TacticalSliders {
   slidersId: string;
   teamId: string;
   matchId?: string;
   
-  // Pressing intensity (0-100)
-  pressing: number; // 0 = low pressure, 100 = high pressure
+  /** Pressing intensity (0 = low pressure, 100 = high pressure) */
+  pressing: number;
   
-  // Tempo of play (0-100)
-  tempo: number; // 0 = slow build-up, 100 = fast counter-attack
+  /** Tempo of play (0 = slow build-up, 100 = fast counter-attack) */
+  tempo: number;
   
-  // Width of play (0-100)
-  width: number; // 0 = narrow/compact, 100 = wide/expansive
+  /** Width of play (0 = narrow/compact, 100 = wide/expansive) */
+  width: number;
   
-  // Defensive line height (0-100)
-  defensiveLineHeight: number; // 0 = deep defense, 100 = high press
+  /** Defensive line height (0 = deep defense, 100 = high press) */
+  defensiveLineHeight: number;
   
-  // Offensive aggression (0-100)
-  offensiveAggression: number; // 0 = passive, 100 = aggressive attack
+  /** Offensive aggression (0 = passive, 100 = aggressive attack) */
+  offensiveAggression: number;
   
-  // Build up play (0-100)
-  buildUpPlay: number; // 0 = long balls, 100 = short passes
+  /** Build up play style (0 = long balls, 100 = short passes) */
+  buildUpPlay: number;
   
-  // Transition speed (0-100)
-  transitionSpeed: number; // 0 = slow possession, 100 = fast transitions
+  /** Transition speed (0 = slow possession, 100 = fast transitions) */
+  transitionSpeed: number;
   
-  // Creativity (0-100)
-  creativity: number; // 0 = structured play, 100 = creative/risky
+  /** Creativity level (0 = structured play, 100 = creative/risky) */
+  creativity: number;
   
   timestamp: number;
 }

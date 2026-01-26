@@ -1,30 +1,57 @@
 /**
  * In-App Chat System
  * 
- * Real-time messaging with:
+ * Real-time messaging system supporting:
  * - Direct messages (P2P)
  * - Club/clan channels
  * - Group chat
- * - Message history
- * - Moderation
+ * - Message history and persistence
+ * - Moderation and blocking
+ * - Reactions and message editing
+ * 
+ * @example
+ * ```ts
+ * const chat = ChatManager.getInstance();
+ * const channel = chat.createChannel('My Clan', 'Clan chat', 'clan', 'player123');
+ * chat.sendMessage(channel.channelId, 'player123', 'Hello team!', 'text');
+ * ```
  */
 
+/** Message content types */
 export type MessageType = 'text' | 'image' | 'emoji' | 'sticker' | 'system';
+
+/** Channel types for different use cases */
 export type ChannelType = 'direct' | 'clan' | 'group' | 'public';
 
+/**
+ * Individual chat message
+ */
 export interface ChatMessage {
+  /** Unique message identifier */
   messageId: string;
+  /** Channel where message was sent */
   channelId: string;
+  /** Sender's player ID */
   senderId: string;
+  /** Sender's display name */
   senderName: string;
+  /** Sender's avatar URL */
   senderAvatar?: string;
+  /** Message content */
   content: string;
+  /** Message type */
   type: MessageType;
+  /** Timestamp when message was sent */
   timestamp: number;
+  /** Whether message was edited */
   edited: boolean;
+  /** Timestamp of last edit */
   editedAt?: number;
-  reactions: Map<string, string[]>; // emoji -> [playerIds]
+  /** Map of emoji reactions to player IDs */
+  reactions: Map<string, string[]>;
+  /** Whether message was deleted */
   isDeleted: boolean;
+  /** Whether message is pinned to channel */
   isPinned: boolean;
 }
 
@@ -45,6 +72,8 @@ export interface ChatChannel {
   maxMessages: number; // Auto-delete old messages
   isPrivate: boolean;
   isPinned: boolean;
+  /** Timestamp of last message sent in channel */
+  lastMessageAt?: number;
   metadata?: Record<string, any>;
 }
 
