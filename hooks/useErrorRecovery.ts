@@ -5,20 +5,8 @@ import { CustomError, ErrorCode, ErrorSeverity } from '@/lib/errors';
 import { getErrorHandler } from '@/lib/errorHandler';
 import { retry, RetryConfig, DEFAULT_RETRY_CONFIG, CircuitBreaker } from '@/lib/retry';
 
-/**
- * Recovery strategy type
- */
-export type RecoveryStrategy =
-  | 'retry'
-  | 'fallback'
-  | 'cache'
-  | 'graceful-degrade'
-  | 'user-action'
-  | 'reload';
+export type RecoveryStrategy = 'retry' | 'fallback' | 'cache' | 'graceful-degrade' | 'user-action' | 'reload';
 
-/**
- * Error recovery state
- */
 export interface RecoveryState {
   isRecovering: boolean;
   strategy: RecoveryStrategy | null;
@@ -28,18 +16,12 @@ export interface RecoveryState {
   canRecover: boolean;
 }
 
-/**
- * Recovery action
- */
 export type RecoveryAction =
   | { type: 'START_RECOVERY'; strategy: RecoveryStrategy; error: CustomError }
   | { type: 'SUCCESS_RECOVERY' }
   | { type: 'FAILED_RECOVERY'; error: CustomError }
   | { type: 'RESET' };
 
-/**
- * Recovery result
- */
 export interface RecoveryResult<T = any> {
   success: boolean;
   strategy: RecoveryStrategy;
@@ -48,9 +30,6 @@ export interface RecoveryResult<T = any> {
   attempts: number;
 }
 
-/**
- * Error recovery configuration
- */
 export interface ErrorRecoveryConfig {
   maxRecoveryAttempts: number;
   retryConfig: RetryConfig;
@@ -78,9 +57,6 @@ const INITIAL_STATE: RecoveryState = {
   canRecover: true,
 };
 
-/**
- * Hook for error recovery and resilience
- */
 export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
   const errorHandler = getErrorHandler();
@@ -97,7 +73,6 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
             strategy: action.strategy,
             lastError: action.error,
           };
-
         case 'SUCCESS_RECOVERY':
           return {
             ...current,
@@ -106,7 +81,6 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
             lastRecoveryTime: Date.now(),
             canRecover: true,
           };
-
         case 'FAILED_RECOVERY':
           return {
             ...current,
@@ -116,10 +90,8 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
             canRecover: false,
             lastError: action.error,
           };
-
         case 'RESET':
           return INITIAL_STATE;
-
         default:
           return current;
       }
@@ -127,14 +99,10 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     INITIAL_STATE
   );
 
-  /**
-   * Retrieve or create a circuit breaker for an identifier
-   */
   const getCircuitBreaker = useCallback(
     (id: string): CircuitBreaker => {
       const existing = circuitBreakerRef.current.get(id);
       if (existing) return existing;
-
       const breaker = new CircuitBreaker(finalConfig.circuitBreakerThreshold);
       circuitBreakerRef.current.set(id, breaker);
       return breaker;
@@ -142,30 +110,20 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     [finalConfig.circuitBreakerThreshold]
   );
 
-  /**
-   * Get cached value if valid
-   */
   const getCached = useCallback(
     (key: string): any | null => {
       if (!finalConfig.enableCache) return null;
-
       const cached = cacheRef.current.get(key);
       if (!cached) return null;
-
-      // Cache valid for 5 minutes
       if (Date.now() - cached.timestamp > 5 * 60 * 1000) {
         cacheRef.current.delete(key);
         return null;
       }
-
       return cached.data;
     },
     [finalConfig.enableCache]
   );
 
-  /**
-   * Set cache
-   */
   const setCached = useCallback(
     (key: string, data: any): void => {
       if (!finalConfig.enableCache) return;
@@ -174,19 +132,13 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     [finalConfig.enableCache]
   );
 
-  /**
-   * Retry strategy
-   */
   const retryStrategy = useCallback(
     async <T,>(fn: () => Promise<T>): Promise<RecoveryResult<T>> => {
       try {
         dispatch({ type: 'START_RECOVERY', strategy: 'retry', error: state.lastError! });
-
         const result = await retry(fn, finalConfig.retryConfig);
-
         dispatch({ type: 'SUCCESS_RECOVERY' });
-        errorHandler.addBreadcrumb('Recovery: retry successful', {}, 'info');
-
+        errorHandler.addBreadcrumb('recovery', 'info', 'Retry successful');
         return {
           success: true,
           strategy: 'retry',
@@ -201,10 +153,8 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
             ErrorCode.INTERNAL_ERROR,
             ErrorSeverity.HIGH
           );
-
         dispatch({ type: 'FAILED_RECOVERY', error: customError });
-        errorHandler.addBreadcrumb('Recovery: retry failed', { error: customError.message }, 'warning');
-
+        errorHandler.addBreadcrumb('recovery', 'warning', 'Retry failed', { error: customError.message });
         return {
           success: false,
           strategy: 'retry',
@@ -216,19 +166,13 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     [state.recoveryAttempts, state.lastError, finalConfig.retryConfig, errorHandler]
   );
 
-  /**
-   * Fallback strategy
-   */
   const fallbackStrategy = useCallback(
     async <T,>(data?: T): Promise<RecoveryResult<T>> => {
       dispatch({ type: 'START_RECOVERY', strategy: 'fallback', error: state.lastError! });
-
       const fallbackData = data ?? finalConfig.fallbackData;
-
       if (fallbackData !== undefined) {
         dispatch({ type: 'SUCCESS_RECOVERY' });
-        errorHandler.addBreadcrumb('Recovery: using fallback data', {}, 'info');
-
+        errorHandler.addBreadcrumb('recovery', 'info', 'Using fallback data');
         return {
           success: true,
           strategy: 'fallback',
@@ -236,13 +180,11 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
           attempts: state.recoveryAttempts,
         };
       }
-
       const error = new CustomError(
         'No fallback data available',
         ErrorCode.INTERNAL_ERROR,
         ErrorSeverity.MEDIUM
       );
-
       dispatch({ type: 'FAILED_RECOVERY', error });
       return {
         success: false,
@@ -254,31 +196,22 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     [state.recoveryAttempts, state.lastError, finalConfig.fallbackData, errorHandler]
   );
 
-  /**
-   * Cache strategy
-   */
   const cacheStrategy = useCallback(
     async <T,>(key: string, fn: () => Promise<T>): Promise<RecoveryResult<T>> => {
-      dispatch({ type: 'START_RECOVERY', strategy: 'cache', error: state.lastError! });
-
-      const cached = getCached(key);
-      if (cached) {
-        dispatch({ type: 'SUCCESS_RECOVERY' });
-        errorHandler.addBreadcrumb('Recovery: cache hit', { key }, 'info');
-
-        return {
-          success: true,
-          strategy: 'cache',
-          data: cached,
-          attempts: state.recoveryAttempts,
-        };
-      }
-
       try {
+        const cached = getCached(key);
+        if (cached !== null) {
+          return {
+            success: true,
+            strategy: 'cache',
+            data: cached,
+            attempts: state.recoveryAttempts,
+          };
+        }
+        dispatch({ type: 'START_RECOVERY', strategy: 'cache', error: state.lastError! });
         const result = await fn();
         setCached(key, result);
         dispatch({ type: 'SUCCESS_RECOVERY' });
-
         return {
           success: true,
           strategy: 'cache',
@@ -293,7 +226,6 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
             ErrorCode.INTERNAL_ERROR,
             ErrorSeverity.MEDIUM
           );
-
         dispatch({ type: 'FAILED_RECOVERY', error: customError });
         return {
           success: false,
@@ -306,9 +238,6 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     [state.recoveryAttempts, state.lastError, getCached, setCached, errorHandler]
   );
 
-  /**
-   * Graceful degradation strategy
-   */
   const gracefulDegradeStrategy = useCallback(
     async <T,>(
       fullFn: () => Promise<T>,
@@ -318,12 +247,10 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
         return await retryStrategy(fullFn);
       } catch (error) {
         dispatch({ type: 'START_RECOVERY', strategy: 'graceful-degrade', error: state.lastError! });
-
         try {
           const degradedResult = await degradedFn();
           dispatch({ type: 'SUCCESS_RECOVERY' });
-          errorHandler.addBreadcrumb('Recovery: graceful degradation', {}, 'info');
-
+          errorHandler.addBreadcrumb('recovery', 'info', 'Graceful degradation applied');
           return {
             success: true,
             strategy: 'graceful-degrade',
@@ -338,7 +265,6 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
               ErrorCode.INTERNAL_ERROR,
               ErrorSeverity.HIGH
             );
-
           dispatch({ type: 'FAILED_RECOVERY', error: customError });
           return {
             success: false,
@@ -352,18 +278,13 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     [retryStrategy, state.recoveryAttempts, state.lastError, errorHandler]
   );
 
-  /**
-   * User action strategy (e.g., reconnect wallet)
-   */
   const userActionStrategy = useCallback(
     async <T,>(onUserAction: () => Promise<T>): Promise<RecoveryResult<T>> => {
       dispatch({ type: 'START_RECOVERY', strategy: 'user-action', error: state.lastError! });
-
       try {
         const result = await onUserAction();
         dispatch({ type: 'SUCCESS_RECOVERY' });
-        errorHandler.addBreadcrumb('Recovery: user action completed', {}, 'info');
-
+        errorHandler.addBreadcrumb('recovery', 'info', 'User action completed');
         return {
           success: true,
           strategy: 'user-action',
@@ -378,7 +299,6 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
             ErrorCode.INTERNAL_ERROR,
             ErrorSeverity.MEDIUM
           );
-
         dispatch({ type: 'FAILED_RECOVERY', error: customError });
         return {
           success: false,
@@ -391,17 +311,12 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     [state.recoveryAttempts, state.lastError, errorHandler]
   );
 
-  /**
-   * Page reload strategy
-   */
   const reloadStrategy = useCallback(async (): Promise<RecoveryResult> => {
     dispatch({ type: 'START_RECOVERY', strategy: 'reload', error: state.lastError! });
-    errorHandler.addBreadcrumb('Recovery: initiating page reload', {}, 'info');
-
+    errorHandler.addBreadcrumb('recovery', 'info', 'Page reload initiated');
     if (typeof window !== 'undefined') {
       window.location.reload();
     }
-
     return {
       success: true,
       strategy: 'reload',
@@ -409,22 +324,14 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     };
   }, [state.recoveryAttempts, state.lastError, errorHandler]);
 
-  /**
-   * Circuit breaker execution
-   */
   const executeWithCircuitBreaker = useCallback(
-    async <T,>(
-      id: string,
-      fn: () => Promise<T>
-    ): Promise<RecoveryResult<T>> => {
+    async <T,>(id: string, fn: () => Promise<T>): Promise<RecoveryResult<T>> => {
       if (!finalConfig.enableCircuitBreaker) {
         return retryStrategy(fn);
       }
-
       try {
         const breaker = getCircuitBreaker(id);
         const result = await breaker.execute(fn);
-
         return {
           success: true,
           strategy: 'retry',
@@ -439,7 +346,6 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
             ErrorCode.INTERNAL_ERROR,
             ErrorSeverity.HIGH
           );
-
         return {
           success: false,
           strategy: 'retry',
@@ -451,17 +357,11 @@ export function useErrorRecovery(config?: Partial<ErrorRecoveryConfig>) {
     [finalConfig.enableCircuitBreaker, getCircuitBreaker, retryStrategy, state.recoveryAttempts]
   );
 
-  /**
-   * Reset recovery state
-   */
   const reset = useCallback(() => {
     dispatch({ type: 'RESET' });
-    errorHandler.addBreadcrumb('Recovery state reset', {}, 'info');
+    errorHandler.addBreadcrumb('recovery', 'info', 'Recovery state reset');
   }, [errorHandler]);
 
-  /**
-   * Clear caches
-   */
   const clearCaches = useCallback(() => {
     cacheRef.current.clear();
   }, []);
