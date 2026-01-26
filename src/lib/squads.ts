@@ -1,7 +1,10 @@
 /**
- * Squad and team management
+ * Squad and team management system
+ * 
+ * Manages player rosters, team sheets, and in-match substitutions.
  */
 
+/** Squad configuration and player roster */
 export interface Squad {
   squadId: string;
   teamId: string;
@@ -10,22 +13,42 @@ export interface Squad {
   createdAt: number;
 }
 
+/** Team sheet for a match */
 export interface TeamSheet {
   squadId: string;
-  startingXI: string[];
-  bench: string[];
-  substitutes: string[];
+  startingXI: string[]; // 11 players
+  bench: string[]; // Available substitutes
+  substitutes: string[]; // Players who can be subbed in
   formation: string;
 }
 
+/**
+ * Squad management service
+ * 
+ * Handles squad creation, player management, and team sheet operations.
+ */
 export class SquadManager {
   private squads: Map<string, Squad> = new Map();
   private teamSheets: Map<string, TeamSheet> = new Map();
+  
+  /** Minimum squad size */
+  private static readonly MIN_SQUAD_SIZE = 11;
+  /** Default maximum squad size */
+  private static readonly DEFAULT_MAX_SIZE = 23;
 
   /**
-   * Create squad
+   * Create a new squad
+   * 
+   * @param teamId - Team identifier
+   * @param maxSize - Maximum number of players (default: 23)
+   * @returns Created squad
+   * @throws {Error} If maxSize is less than 11
    */
-  createSquad(teamId: string, maxSize: number = 23): Squad {
+  createSquad(teamId: string, maxSize: number = SquadManager.DEFAULT_MAX_SIZE): Squad {
+    if (maxSize < SquadManager.MIN_SQUAD_SIZE) {
+      throw new Error(`Squad size must be at least ${SquadManager.MIN_SQUAD_SIZE}`);
+    }
+    
     const squadId = `squad-${teamId}-${Date.now()}`;
     const now = Date.now();
 
@@ -43,12 +66,27 @@ export class SquadManager {
 
   /**
    * Add player to squad
+   * 
+   * @param squadId - Squad identifier
+   * @param playerId - Player to add
+   * @returns True if player was added, false if already in squad or squad is full
    */
   addPlayerToSquad(squadId: string, playerId: string): boolean {
     const squad = this.squads.get(squadId);
-    if (!squad || squad.playerIds.includes(playerId)) return false;
+    if (!squad) {
+      console.warn(`[SquadManager] Squad not found: ${squadId}`);
+      return false;
+    }
+    
+    if (squad.playerIds.includes(playerId)) {
+      console.warn(`[SquadManager] Player ${playerId} already in squad`);
+      return false;
+    }
 
-    if (squad.playerIds.length >= squad.maxSize) return false;
+    if (squad.playerIds.length >= squad.maxSize) {
+      console.warn(`[SquadManager] Squad ${squadId} is full (${squad.maxSize} players)`);
+      return false;
+    }
 
     squad.playerIds.push(playerId);
     return true;
