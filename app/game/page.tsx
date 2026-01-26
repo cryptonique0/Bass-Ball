@@ -93,8 +93,8 @@ export default function GamePage() {
               onTackle={(playerId) => {}}
               onSprint={() => {}}
               canSprint={true}
-              ballX={gameState?.ball?.x || 0}
-              ballY={gameState?.ball?.y || 0}
+              ballX={gameState?.ballX || 0}
+              ballY={gameState?.ballY || 0}
               team="home"
             />
 
