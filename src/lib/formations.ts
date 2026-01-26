@@ -1,7 +1,11 @@
 /**
  * Formation management system for team tactics
+ * 
+ * Provides predefined tactical formations with player positioning,
+ * tactical attributes, and role assignments.
  */
 
+/** Supported formation types */
 export type FormationType =
   | '4-3-3'
   | '4-2-3-1'
@@ -10,20 +14,37 @@ export type FormationType =
   | '4-4-2'
   | '3-4-3';
 
+/**
+ * Player position within a formation
+ * Coordinates are normalized (0-1) representing position on field
+ */
 export interface PlayerPosition {
+  /** Position abbreviation (e.g., 'ST', 'CM', 'GK') */
   position: string;
+  /** X coordinate (0 = left, 1 = right) */
   x: number;
+  /** Y coordinate (0 = goalkeeper, 1 = attackers) */
   y: number;
-  role: string;
+  /** Role type (Keeper, Defender, Midfielder, Forward) */
+  role: 'Keeper' | 'Defender' | 'Midfielder' | 'Forward';
 }
 
+/**
+ * Complete formation definition with positioning and tactical attributes
+ */
 export interface Formation {
+  /** Formation type identifier */
   type: FormationType;
+  /** Display name */
   name: string;
+  /** Tactical description */
   description: string;
+  /** Player positions (always 11 for starting lineup) */
   positions: PlayerPosition[];
-  aggressiveness: number; // 0-10
-  defenseFocus: number; // 0-10
+  /** Offensive mindset (0 = very defensive, 10 = very attacking) */
+  aggressiveness: number;
+  /** Defensive solidity (0 = weak defense, 10 = strong defense) */
+  defenseFocus: number;
 }
 
 export const FORMATIONS: Record<FormationType, Formation> = {
