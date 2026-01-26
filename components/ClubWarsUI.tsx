@@ -138,7 +138,7 @@ function ActiveWarsTab({ wars, onRegister, userClubId }: { wars: ClubWar[]; onRe
             key={war.warId}
             war={war}
             onRegister={onRegister}
-            isRegistered={war.registeredClubs?.includes(userClubId) || false}
+            isRegistered={war.registeredClubs?.has(userClubId) || false}
           />
         ))
       )}
