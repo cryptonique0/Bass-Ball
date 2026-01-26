@@ -43,7 +43,7 @@ export function ClubWarsUI() {
     // Get wars for user's club if they have one
     if (club) {
       const clubWars = activeWars.filter(w => 
-        w.registeredClubs?.includes(club.clubId)
+        w.registeredClubs?.has(club.clubId)
       );
       setMyWars(clubWars);
     }
