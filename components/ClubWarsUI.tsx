@@ -285,7 +285,7 @@ function LeaderboardRow({ metrics, rank }: { metrics: { clubId: string; wins: nu
       <td className="px-6 py-4 text-right text-emerald-400 font-bold">{metrics.wins}</td>
       <td className="px-6 py-4 text-right text-red-400 font-bold">{metrics.losses}</td>
       <td className="px-6 py-4 text-right text-slate-300 font-semibold">
-        {(metrics.winRate * 100).toFixed(1)}%
+        {(((metrics.wins) / Math.max(metrics.wins + metrics.losses, 1)) * 100).toFixed(1)}%
       </td>
       <td className="px-6 py-4 text-right">
         <div className="text-white font-bold">{metrics.rating}</div>
