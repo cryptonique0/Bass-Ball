@@ -187,7 +187,7 @@ function WarCard({
       <div className="space-y-3 mb-6">
         <div className="flex items-center gap-2 text-slate-100">
           <Users size={16} />
-          <span>{war.registeredClubs?.length || 0} clubs registered</span>
+          <span>{war.registeredClubs?.size || 0} clubs registered</span>
         </div>
         <div className="flex items-center gap-2 text-slate-100">
           <Calendar size={16} />
