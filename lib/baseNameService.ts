@@ -1,28 +1,66 @@
 /**
  * Base Name Service (BNS)
- * Register and manage .base domain names for player profiles on Base network
+ * 
+ * Register and manage .base domain names for player profiles on Base network.
+ * 
+ * Features:
+ * - Domain registration and renewal
+ * - Profile metadata storage
+ * - Domain trading and auctions
+ * - NFT minting for domains
+ * - Name resolution and reverse lookup
+ * 
+ * @example
+ * ```ts
+ * const bns = new BaseNameService();
+ * await bns.registerDomain('player123.base', walletAddress, 'player@email.com');
+ * const profile = await bns.resolveName('player123.base');
+ * ```
  */
 
+/** Domain tier levels */
+type DomainTier = 'free' | 'premium' | 'elite';
+
+/** Domain visibility settings */
+type DomainVisibility = 'public' | 'private' | 'friends_only';
+
+/**
+ * Complete domain record with registration and profile data
+ */
 interface BaseDomainRecord {
+  /** Unique record identifier */
   recordId: string;
-  name: string; // "playername.base"
-  owner: string; // wallet address
-  walletAddress: string; // resolved wallet
-  email: string; // owner email
+  /** Domain name (e.g., "playername.base") */
+  name: string;
+  /** Owner's wallet address */
+  owner: string;
+  /** Resolved wallet address */
+  walletAddress: string;
+  /** Owner's email */
+  email: string;
   
-  // Domain registration
+  /** Timestamp when domain was registered */
   registeredAt: number;
+  /** Timestamp when domain expires */
   expiresAt: number;
+  /** Whether domain auto-renews */
   autoRenew: boolean;
-  renewalPrice: string; // in ETH
+  /** Price for next renewal in ETH */
+  renewalPrice: string;
   
-  // Profile data stored on domain
+  /** Profile data stored on domain */
   profile: {
+    /** Display name */
     displayName: string;
+    /** Avatar image URL or IPFS hash */
     avatar: string;
+    /** User biography */
     bio: string;
-    tier: 'free' | 'premium' | 'elite';
+    /** Account tier level */
+    tier: DomainTier;
+    /** Verification status */
     verified: boolean;
+    /** Player statistics */
     stats: {
       level: number;
       rating: number;
@@ -31,21 +69,25 @@ interface BaseDomainRecord {
     };
   };
   
-  // Domain settings
-  primaryDomain: boolean; // default display name
-  visibility: 'public' | 'private' | 'friends_only';
+  /** Whether this is the primary domain for the user */
+  primaryDomain: boolean;
+  /** Profile visibility setting */
+  visibility: DomainVisibility;
   
-  // NFT integration
+  /** Whether domain has been minted as NFT */
   nftMinted: boolean;
+  /** NFT token ID if minted */
   nftTokenId?: string;
+  /** NFT contract address */
   nftContractAddress?: string;
   
-  // Social links
-  socialLinks: Map<string, string>; // twitter, discord, etc.
+  /** Social media links */
+  socialLinks: Map<string, string>;
   
-  // Achievements/badges
+  /** Achievement badges */
   badges: string[];
   
+  /** Record creation timestamp */
   timestamp: number;
 }
 
@@ -134,7 +176,7 @@ interface RegistrationStats {
   averagePrice: string; // in ETH
   medianPrice: string;
   
-  mostPopularTier: 'free' | 'premium' | 'elite';
+  mostPopularTier: DomainTier;
   
   snapshot: number; // timestamp
 }
@@ -258,7 +300,7 @@ export class BaseNameService {
       revenueCollected: '0',
       averagePrice: '0.003',
       medianPrice: '0.002',
-      mostPopularTier: 'standard',
+      mostPopularTier: 'free',
       snapshot: Date.now(),
     };
   }
