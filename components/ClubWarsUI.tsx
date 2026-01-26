@@ -193,10 +193,7 @@ function WarCard({
           <Calendar size={16} />
           <span>Format: {war.format}</span>
         </div>
-        <div className="flex items-center gap-2 text-slate-100">
-          <Trophy size={16} />
-          <span>Prize Pool: {war.prizePool?.toLocaleString()} gold</span>
-        </div>
+        {/* Rewards info unavailable in data model; adjust when prize pool is added */}
       </div>
 
       <button
