@@ -13,7 +13,7 @@ export const FeeMarketAnalyzer = ({
   showHistory = true,
   className = '',
 }: FeeMarketAnalyzerProps) => {
-  const { feeEstimate, baseFee, formatFee } = useEIP1559Fees(chainId);
+  const { feeEstimate, baseFee, formatFee } = useEIP1559Fees();
 
   const congestionLevel = useMemo(() => {
     if (!baseFee) return 'unknown';
