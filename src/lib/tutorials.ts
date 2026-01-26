@@ -1,23 +1,49 @@
 /**
  * Tutorial and onboarding system
+ * 
+ * Provides step-by-step tutorials for new players to learn game mechanics,
+ * controls, and strategies.
  */
 
+/** Tutorial difficulty levels */
+export type TutorialLevel = 'basics' | 'intermediate' | 'advanced';
+
+/**
+ * Individual tutorial step configuration
+ */
 export interface TutorialStep {
+  /** Unique step identifier */
   id: string;
+  /** Step title displayed to user */
   title: string;
+  /** Brief description of what player will learn */
   description: string;
+  /** Detailed instructions for completing step */
   instructions: string[];
+  /** DOM element ID to highlight (optional) */
   targetElement?: string;
+  /** Screen area to highlight (optional) */
   highlightArea?: {
     x: number;
     y: number;
     width: number;
     height: number;
   };
+  /** Whether step can be skipped */
   skippable: boolean;
+  /** Function to check if step is completed */
   completionCondition?: () => boolean;
+  /** Reward for completing step */
+  reward?: {
+    type: 'currency' | 'item' | 'achievement';
+    amount?: number;
+    itemId?: string;
+  };
 }
 
+/**
+ * Player's progress through tutorials
+ */
 export interface TutorialProgress {
   playerId: string;
   completedSteps: Set<string>;
@@ -25,6 +51,7 @@ export interface TutorialProgress {
   tutorialCompleted: boolean;
   startedAt: number;
   completedAt?: number;
+  skippedSteps: string[];
 }
 
 export const TUTORIALS: Record<string, TutorialStep[]> = {
@@ -117,6 +144,7 @@ export class TutorialService {
       currentStep: tutorial[0].id,
       tutorialCompleted: false,
       startedAt: Date.now(),
+      skippedSteps: [],
     };
 
     this.progress.set(`${playerId}-${tutorialId}`, progress);
