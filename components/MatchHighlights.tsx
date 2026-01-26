@@ -439,7 +439,7 @@ interface TeamStatCardProps {
   team: any;
 }
 
-const TeamStatCardProps: React.FC<TeamStatCardProps> = ({ team }) => {
+const TeamStatCard: React.FC<TeamStatCardProps> = ({ team }) => {
   return (
     <div className="bg-slate-800 rounded-lg p-4">
       <h4 className="text-white font-semibold mb-3">{team.teamName}</h4>
