@@ -15,7 +15,13 @@ export function ClubWarsUI() {
 
   const [activeTab, setActiveTab] = useState<'active-wars' | 'leaderboard' | 'my-wars'>('active-wars');
   const [wars, setWars] = useState<ClubWar[]>([]);
-  const [leaderboard, setLeaderboard] = useState<WarMetrics[]>([]);
+  const [leaderboard, setLeaderboard] = useState<Array<{
+    clubId: string;
+    wins: number;
+    losses: number;
+    tier: WarTier;
+    rating: number;
+  }>>([]);
   const [myWars, setMyWars] = useState<ClubWar[]>([]);
   const [userId] = useState('player_1');
   const [userClubId, setUserClubId] = useState('');
@@ -213,7 +219,13 @@ function WarCard({
 /**
  * Leaderboard Tab
  */
-function LeaderboardTab({ leaderboard }: { leaderboard: WarMetrics[] }) {
+function LeaderboardTab({ leaderboard }: { leaderboard: Array<{
+  clubId: string;
+  wins: number;
+  losses: number;
+  tier: WarTier;
+  rating: number;
+}> }) {
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
