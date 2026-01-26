@@ -21,18 +21,18 @@ export function LiveMatch({ homeTeam, awayTeam, mode, difficulty = 'normal' }: L
 
   const matchHook = mode === 'ai' ? useAIMatch(homeTeam, awayTeam) : usePvPMatch(homeTeam, awayTeam);
 
-  const { gameState, matchStats, matchEngine, isPaused, pause, resume, togglePause, selectPlayer, shoot, pass, sprint, tackle, resetMatch } = matchHook;
+  const { gameState, matchStats, isPaused, pause, resume, togglePause, selectPlayer, shoot, pass, sprint, tackle, resetMatch } = matchHook;
 
   // Check if match is over
   const isMatchOver = gameState.gameTime >= 90;
 
-  if (isMatchOver && matchEngine) {
+  if (isMatchOver && matchStats) {
     return (
       <MatchSummary
         homeTeam={homeTeam}
         awayTeam={awayTeam}
         matchStats={matchStats}
-        matchEngine={matchEngine}
+        matchEngine={null as any}
         gameTime={gameState.gameTime}
         onRestart={resetMatch}
       />
