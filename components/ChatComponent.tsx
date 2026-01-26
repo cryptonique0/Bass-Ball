@@ -113,7 +113,7 @@ export function ChatComponent() {
                       : 'text-slate-400 hover:bg-slate-700 hover:text-slate-300'
                   }`}
                 >
-                  {channel.type === 'private' ? <Lock size={18} /> : <Hash size={18} />}
+                  {channel.type === 'direct' ? <Lock size={18} /> : <Hash size={18} />}
                   <span className="truncate text-sm font-semibold">{channel.name}</span>
                 </button>
               ))}
