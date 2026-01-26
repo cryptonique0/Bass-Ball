@@ -193,6 +193,13 @@ export class FarcasterFrameProvider {
   }
 
   /**
+   * Get game by ID
+   */
+  getGame(gameId: string): FrameGameState | undefined {
+    return this.games.get(gameId);
+  }
+
+  /**
    * Mini Games Setup
    */
   private initializeMiniGames(): void {
