@@ -1,102 +1,172 @@
 /**
  * Progression System
- * Player/Team level progression with XP, tiers, milestones, and achievement tracking
+ * 
+ * Manages player and team level progression with XP, tiers, milestones,
+ * and achievement tracking.
+ * 
+ * Features:
+ * - Level-based progression (1-100)
+ * - Tier system (Bronze through Master)
+ * - Achievement milestones
+ * - Badges and rewards
+ * - Statistics tracking
+ * - Leaderboard integration
+ * 
+ * @example
+ * ```ts
+ * const progression = await getPlayerProgression('player123');
+ * await awardXP('player123', 1000, 'match_win');
+ * const badges = progression.achievedBadges;
+ * ```
  */
+
+/** Tier levels in progression system */
+export type ProgressionTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master';
+
+/** Milestone categories */
+export type MilestoneCategory = 'wins' | 'goals' | 'assists' | 'consistency' | 'versatility' | 'seasonal';
+
+/** Badge categories */
+export type BadgeCategory = 'performance' | 'consistency' | 'milestone' | 'seasonal';
+
+/** Reward types */
+export type RewardType = 'xp' | 'token' | 'nft' | 'cosmetic' | 'utility';
 
 /**
- * Player/Team progression record
+ * Player or team progression record
+ * Tracks all progression metrics including level, XP, tier, and achievements
  */
 export interface PlayerProgression {
-  // Identifiers
+  /** Unique progression record identifier */
   progressionId: string;
-  entityId: string; // Player or Team ID
+  /** Player or Team ID */
+  entityId: string;
+  /** Entity type (player or team) */
   entityType: 'player' | 'team';
+  /** Display name */
   entityName: string;
+  /** Owner wallet address */
   owner: string;
 
-  // Level & Experience
-  currentLevel: number; // 1-100
-  currentXP: number; // XP towards next level
-  totalXP: number; // Lifetime XP earned
-  xpToNextLevel: number; // XP needed for next level
+  /** Current level (1-100) */
+  currentLevel: number;
+  /** XP progress towards next level */
+  currentXP: number;
+  /** Lifetime total XP earned */
+  totalXP: number;
+  /** XP required for next level */
+  xpToNextLevel: number;
 
-  // Tier System
-  currentTier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master';
-  tierXP: number; // XP within current tier
-  tierProgress: number; // 0-100%
-  maxTierReached: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master';
+  /** Current tier */
+  currentTier: ProgressionTier;
+  /** XP within current tier */
+  tierXP: number;
+  /** Progress within tier (0-100%) */
+  tierProgress: number;
+  /** Highest tier ever reached */
+  maxTierReached: ProgressionTier;
 
-  // Progression Milestones
-  milestonesCompleted: string[]; // Achievement milestone IDs
+  /** IDs of completed achievement milestones */
+  milestonesCompleted: string[];
+  /** Progress on active milestones */
   currentMilestoneProgress: {
     milestoneId: string;
-    category: string; // 'wins', 'goals', 'assists', 'consistency', 'versatility'
-    progress: number; // Current progress
-    target: number; // Target to complete
+    category: MilestoneCategory;
+    progress: number;
+    target: number;
     completed: boolean;
   }[];
 
-  // Stats Tracking
+  /** Total matches played */
   matchesPlayed: number;
+  /** Total matches won */
   matchesWon: number;
-  winRate: number; // 0-100%
+  /** Win rate percentage (0-100) */
+  winRate: number;
+  /** Total goals scored */
   goalsScored: number;
+  /** Total assists */
   assists: number;
+  /** Total clean sheets (goalkeepers/defenders) */
   cleanSheets: number;
+  /** Average match rating */
   averageRating: number;
-  consistencyScore: number; // 0-100 based on rating variance
+  /** Consistency score based on rating variance (0-100) */
+  consistencyScore: number;
 
-  // Badges & Achievements
+  /** Unlocked badges and achievements */
   achievedBadges: {
     badgeId: string;
     name: string;
     description: string;
-    category: 'performance' | 'consistency' | 'milestone' | 'seasonal';
+    category: BadgeCategory;
     unlockedDate: number;
   }[];
 
-  // Rewards
+  /** Rewards earned through progression */
   rewardsEarned: {
-    type: 'xp' | 'token' | 'nft' | 'cosmetic' | 'utility';
+    type: RewardType;
     amount: number;
     description: string;
     claimedDate: number;
   }[];
 
-  // Timeline
+  /** Account creation timestamp */
   joinedDate: number;
+  /** Last update timestamp */
   lastUpdated: number;
+  /** Last level up timestamp */
   lastLevelUp?: number;
+  /** Last tier up timestamp */
   lastTierUp?: number;
 
-  // Metadata
-  streak: number; // Current win streak
-  longestStreak: number; // Best win streak
-  versatilityScore: number; // Plays multiple positions/roles
+  /** Current consecutive win streak */
+  streak: number;
+  /** Best ever win streak */
+  longestStreak: number;
+  /** Versatility score (plays multiple positions) */
+  versatilityScore: number;
+  /** Position on leaderboard */
   leaderboardRank?: number;
 }
 
 /**
  * Progression milestone definition
+ * 
+ * Defines requirements and rewards for achievement milestones
  */
 export interface ProgressionMilestone {
+  /** Unique milestone identifier */
   milestoneId: string;
+  /** Display name */
   name: string;
+  /** Description of requirements */
   description: string;
-  category: 'wins' | 'goals' | 'assists' | 'consistency' | 'versatility' | 'seasonal';
+  /** Milestone category */
+  category: MilestoneCategory;
+  /** Target value to achieve */
   targetValue: number;
+  /** XP awarded upon completion */
   xpReward: number;
+  /** Optional badge ID awarded */
   badgeReward?: string;
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'master';
+  /** Minimum tier required to unlock */
+  tier: ProgressionTier;
+  /** Whether milestone can be completed multiple times */
   isRepeatable: boolean;
 }
 
 /**
  * Achievement badge definition
+ * 
+ * Defines collectible badges earned through achievements
  */
 export interface ProgressionBadge {
+  /** Unique badge identifier */
   badgeId: string;
+  /** Badge display name */
   name: string;
+  /** Badge description */
   description: string;
   category: 'performance' | 'consistency' | 'milestone' | 'seasonal';
   icon: string; // Emoji or asset path
