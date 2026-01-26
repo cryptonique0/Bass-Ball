@@ -66,7 +66,7 @@ export const FarcasterMiniMatchFrame: React.FC<FarcasterMiniMatchFrameProps> = (
     const targetActions = 10; // Need to complete 10 actions to win
 
     gameLoopRef.current = setInterval(() => {
-      const game = provider.games?.get?.(gameId);
+      const game = provider.getGame(gameId);
       if (!game || game.status !== 'active') {
         if (gameLoopRef.current) clearInterval(gameLoopRef.current);
         return;
